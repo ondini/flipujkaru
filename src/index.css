@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============ GLOBÁLNÍ ZÁKLAD ============ */
+@layer base {
+  body {
+    @apply bg-ink-950 text-zinc-300 font-sans antialiased overflow-x-hidden;
+  }
+  ::selection {
+    background: #39ff14;
+    color: #08080a;
+  }
+  html {
+    scrollbar-color: #26262e #08080a;
+    -webkit-text-size-adjust: 100%; /* iOS nezvětšuje text na šířku */
+  }
+  /* Proklik v menu nesmí schovat nadpis pod fixní navbar */
+  section[id] {
+    scroll-margin-top: 84px;
+  }
+  /* Lepší zalamování dlouhých slov na úzkém mobilu */
+  h1, h2, h3, h4 {
+    overflow-wrap: break-word;
+  }
+}
+
+/* ============ UTILITY / EFEKTY ============ */
+@layer components {
+  /* Jemný grid podklad s radiální maskou (hero) */
+  .bg-grid {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 54px 54px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 35%, transparent 100%);
+    mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 35%, transparent 100%);
+  }
+
+  /* Filmové zrno přes celou stránku */
+  .grain::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.04;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Gradientový akcentní text */
+  .text-grad {
+    background: linear-gradient(100deg, #fff 30%, #39ff14);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Animovaná conic obruba pro featured plán */
+  .grad-border {
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .grad-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    z-index: -1;
+    background: linear-gradient(120deg, #39ff14, #14ffd1, #7bff3a, #39ff14);
+    background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: gradient-shift 5s ease infinite;
+    pointer-events: none;
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Skleněná deska (glassmorphism) — tmavá */
+  .glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Marquee — pauza při najetí myší */
+  .marquee-track {
+    animation: marquee 40s linear infinite;
+  }
+  .marquee-pause:hover .marquee-track {
+    animation-play-state: paused;
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Animované zaškrtnutí (SVG check se „nakreslí") */
+  .check-draw path {
+    stroke-dasharray: 20;
+    stroke-dashoffset: 20;
+    transition: stroke-dashoffset 0.4s ease 0.05s;
+  }
+  .check-on .check-draw path {
+    stroke-dashoffset: 0;
+  }
+
+  /* Scroll-reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.in {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Fallback pozadí pro nenačtené fotky aut */
+  .img-fallback {
+    background: linear-gradient(135deg, #26262e, #141418);
+  }
+}
+
+/* Na dotykových zařízeních (bez hoveru) zobraz detail karty trvale */
+@media (hover: none) {
+  .car-detail-reveal {
+    transform: translateY(0) !important;
+  }
+}
+
+/* ============ 3D PRVKY ============ */
+.tilt-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s;
+  will-change: transform;
+}
+.depth-1 { transform: translateZ(28px); }
+.depth-2 { transform: translateZ(48px); }
+
+/* Neonová 3D mřížková podlaha (synthwave hloubka v hero) */
+.grid-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 0;
+  width: 220%;
+  height: 340px;
+  transform: translateX(-50%) perspective(420px) rotateX(70deg);
+  transform-origin: bottom center;
+  background-image: linear-gradient(rgba(57, 255, 20, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57, 255, 20, 0.4) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: linear-gradient(to top, #000, transparent 78%);
+  mask-image: linear-gradient(to top, #000, transparent 78%);
+  animation: grid-floor-move 2.6s linear infinite;
+  pointer-events: none;
+  opacity: 0.4;
+}
+@keyframes grid-floor-move {
+  from { background-position: 0 0; }
+  to { background-position: 0 48px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grid-floor { animation: none; }
+  .tilt-3d { transition: none; }
+}
+
+/* ============ CUSTOM SCROLLBAR ============ */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: #08080a;
+}
+::-webkit-scrollbar-thumb {
+  background: #26262e;
+  border: 2px solid #08080a;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #39ff14;
+}

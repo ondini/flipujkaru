@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="cs" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlipujKáru — Odemkni zisk na čtyřech kolech</title>
+  <meta name="description" content="Bazar prověřených aut a prémiová car-flipping akademie. Kup chytře, prodej se ziskem." />
+
+  <!-- Favicon = naše logo (inline SVG data URI) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%230a0a0b'/%3E%3Cpath d='M8 26a12 12 0 0 1 24 0' fill='none' stroke='%2339FF14' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M20 25 L27 13' stroke='%2339FF14' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='25' r='3' fill='%2339FF14'/%3E%3C/svg%3E" />
+
+  <!-- ============ CDN: Tailwind / Lucide / Inter ============ -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- ============ TAILWIND KONFIGURACE / DESIGN TOKENY ============ -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            display: ['"Space Grotesk"', 'Inter', 'sans-serif'], // pro nadpisy = víc charakteru
+          },
+          colors: {
+            accent: { DEFAULT: '#39FF14', dim: '#2bd40e', soft: 'rgba(57,255,20,0.12)' },
+            ink: { 950:'#08080a', 900:'#0d0d10', 850:'#141418', 800:'#1b1b21', 700:'#26262e', 600:'#3a3a45' },
+          },
+          borderRadius: { xl:'0.875rem', '2xl':'1.25rem', '3xl':'1.75rem' },
+          boxShadow: {
+            soft: '0 20px 60px -20px rgba(0,0,0,0.6)',
+            glow: '0 0 0 1px rgba(57,255,20,0.45), 0 22px 70px -22px rgba(57,255,20,0.4)',
+          },
+          keyframes: {
+            'fade-up': { '0%':{opacity:'0',transform:'translateY(20px)'}, '100%':{opacity:'1',transform:'translateY(0)'} },
+            'marquee': { '0%':{transform:'translateX(0)'}, '100%':{transform:'translateX(-50%)'} },
+            'float': { '0%,100%':{transform:'translateY(0)'}, '50%':{transform:'translateY(-10px)'} },
+            'spin-slow': { to:{transform:'rotate(360deg)'} },
+          },
+          animation: {
+            'fade-up':'fade-up .7s cubic-bezier(.16,1,.3,1) both',
+            'marquee':'marquee 28s linear infinite',
+            'float':'float 6s ease-in-out infinite',
+            'spin-slow':'spin-slow 14s linear infinite',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Jemný grid + radiální maska pro hero */
+    .bg-grid{
+      background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+                       linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+      background-size:54px 54px;
+      mask-image:radial-gradient(ellipse 75% 55% at 50% 0%,#000 35%,transparent 100%);
+    }
+    /* Filmové zrno pro prémiový "tisk" pocit */
+    .grain::before{
+      content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.04;mix-blend-mode:overlay;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    /* Spotlight kurzor v hero */
+    #spotlight{
+      position:absolute;inset:0;pointer-events:none;z-index:0;transition:background .15s ease;
+      background:radial-gradient(420px circle at var(--mx,50%) var(--my,30%),rgba(57,255,20,.10),transparent 60%);
+    }
+    /* Scroll-reveal */
+    .reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1);}
+    .reveal.in{opacity:1;transform:none;}
+    /* Gradient text akcent */
+    .text-grad{background:linear-gradient(100deg,#fff 30%,#39FF14);-webkit-background-clip:text;background-clip:text;color:transparent;}
+    /* Karty bazaru – filtr */
+    .car-card{transition:opacity .35s ease,transform .35s ease;}
+    .car-card.is-hidden{display:none;}
+    /* 3D tilt */
+    .tilt{transform-style:preserve-3d;transition:transform .2s ease;}
+    /* Animovaná duhová obruba featured plánu */
+    .ring-anim{position:relative;}
+    .ring-anim::before{
+      content:"";position:absolute;inset:-1.5px;border-radius:inherit;padding:1.5px;z-index:-1;
+      background:conic-gradient(from 0deg,#39FF14,#0d0d10 25%,#39FF14 50%,#0d0d10 75%,#39FF14);
+      -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor;mask-composite:exclude;animation:spin-slow 6s linear infinite;opacity:.8;
+    }
+    ::selection{background:#39FF14;color:#08080a;}
+    /* Skrytý nadpis pro čtečky */
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+    html{scrollbar-color:#26262e #08080a;}
+  </style>
+</head>
+
+<body class="grain bg-ink-950 text-zinc-300 font-sans antialiased overflow-x-hidden">
+  <h1 class="sr-only">FlipujKáru — bazar prověřených aut a car-flipping akademie</h1>
+
+  <!-- ====================================================================
+       NAVIGACE
+  ===================================================================== -->
+  <header id="nav" class="fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b border-transparent">
+    <nav class="mx-auto max-w-7xl px-6 h-[68px] flex items-center justify-between">
+      <a href="#hero" class="flex items-center gap-2.5 group" aria-label="FlipujKáru domů">
+        <!-- ====== LOGO (značka) ====== -->
+        <span class="relative grid place-items-center w-10 h-10 rounded-xl bg-ink-850 border border-white/10 overflow-hidden group-hover:border-accent/50 transition">
+          <svg viewBox="0 0 40 40" class="w-7 h-7" aria-hidden="true">
+            <path d="M8 27a12 12 0 0 1 24 0" fill="none" stroke="#39FF14" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M8 27a12 12 0 0 1 24 0" fill="none" stroke="#39FF14" stroke-width="2.6" stroke-linecap="round" opacity=".25" transform="scale(1.0)"/>
+            <path d="M20 26 L27.5 12.5" stroke="#39FF14" stroke-width="2.8" stroke-linecap="round"/>
+            <circle cx="20" cy="26" r="2.8" fill="#39FF14"/>
+            <circle cx="20" cy="26" r="5.5" fill="none" stroke="#39FF14" stroke-width="1" opacity=".4"/>
+          </svg>
+        </span>
+        <span class="font-display text-xl font-bold tracking-tight text-white">
+          Flipuj<span class="text-accent">Káru</span>
+        </span>
+      </a>
+
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
+        <a href="#marketplace" class="hover:text-white transition">Bazar</a>
+        <a href="#kalkulacka" class="hover:text-white transition">Kalkulačka</a>
+        <a href="#edukace" class="hover:text-white transition">Akademie</a>
+        <a href="#cenik" class="hover:text-white transition">Členství</a>
+        <a href="#faq" class="hover:text-white transition">FAQ</a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="#cenik" class="hidden sm:inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-ink-950 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition shadow-glow">
+          Začít flipovat <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+        <button id="menuBtn" class="md:hidden grid place-items-center w-10 h-10 rounded-xl border border-white/10 text-white" aria-label="Menu">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </nav>
+    <div id="mobileMenu" class="hidden md:hidden border-t border-white/5 bg-ink-900/95 backdrop-blur px-6 py-4 space-y-2 text-sm font-medium">
+      <a href="#marketplace" class="block py-2 text-zinc-300 hover:text-accent">Bazar</a>
+      <a href="#kalkulacka" class="block py-2 text-zinc-300 hover:text-accent">Kalkulačka zisku</a>
+      <a href="#edukace" class="block py-2 text-zinc-300 hover:text-accent">Akademie</a>
+      <a href="#cenik" class="block py-2 text-zinc-300 hover:text-accent">Členství</a>
+      <a href="#faq" class="block py-2 text-zinc-300 hover:text-accent">FAQ</a>
+    </div>
+  </header>
+
+  <!-- ====================================================================
+       1. HERO
+  ===================================================================== -->
+  <section id="hero" class="relative overflow-hidden pt-32 pb-24 md:pt-44 md:pb-32">
+    <div id="spotlight"></div>
+    <div class="absolute inset-0 bg-grid"></div>
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[760px] h-[760px] rounded-full bg-accent/10 blur-[140px] pointer-events-none"></div>
+
+    <div class="relative mx-auto max-w-7xl px-6 z-10">
+      <div class="max-w-3xl animate-fade-up">
+        <span class="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
+          Prověřená auta &amp; reálné know-how — bez kečupu
+        </span>
+
+        <h2 class="mt-6 font-display text-5xl sm:text-6xl md:text-7xl font-bold leading-[1.02] tracking-tight text-white">
+          Odemkni zisk<br class="hidden sm:block"/> na <span class="text-grad">čtyřech kolech</span>.
+        </h2>
+
+        <p class="mt-6 text-lg md:text-xl leading-relaxed text-zinc-400 max-w-2xl">
+          Kup si prověřené auto z našeho skladu — nebo se nauč profesionálně
+          nakupovat a prodávat se ziskem. Žádné sliby přes noc. Jen data,
+          systém a komunita, která to dělá každý den.
+        </p>
+
+        <div class="mt-9 flex flex-col sm:flex-row gap-4">
+          <a href="#marketplace" class="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-7 py-4 font-semibold text-ink-950 hover:brightness-110 hover:scale-[1.02] active:scale-95 transition shadow-glow">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i> Chci koupit auto
+            <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition"></i>
+          </a>
+          <a href="#cenik" class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-7 py-4 font-semibold text-white hover:bg-white/10 hover:border-white/25 transition backdrop-blur">
+            <i data-lucide="graduation-cap" class="w-5 h-5"></i> Chci se naučit flipovat
+          </a>
+        </div>
+
+        <!-- Animovaná počítadla -->
+        <dl class="mt-14 grid grid-cols-3 gap-6 max-w-lg">
+          <div><dt class="font-display text-3xl md:text-4xl font-bold text-white" data-count="320" data-suffix="+">0</dt><dd class="mt-1 text-sm text-zinc-500">prodaných aut</dd></div>
+          <div><dt class="font-display text-3xl md:text-4xl font-bold text-white" data-count="1800" data-suffix="+">0</dt><dd class="mt-1 text-sm text-zinc-500">členů komunity</dd></div>
+          <div><dt class="font-display text-3xl md:text-4xl font-bold text-white" data-count="4.9" data-decimals="1" data-suffix="★">0</dt><dd class="mt-1 text-sm text-zinc-500">hodnocení</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Brand marquee -->
+    <div class="relative mt-20 border-y border-white/5 py-5 overflow-hidden">
+      <div class="flex w-max animate-marquee gap-12 px-6 text-zinc-600 font-display font-semibold text-lg">
+        <span>BMW</span><span>Audi</span><span>Porsche</span><span>Mercedes-AMG</span><span>Toyota</span><span>Nissan GT-R</span><span>Škoda</span><span>Volkswagen</span><span>Ford</span><span>Subaru</span>
+        <span>BMW</span><span>Audi</span><span>Porsche</span><span>Mercedes-AMG</span><span>Toyota</span><span>Nissan GT-R</span><span>Škoda</span><span>Volkswagen</span><span>Ford</span><span>Subaru</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================================
+       2. MARKETPLACE
+  ===================================================================== -->
+  <section id="marketplace" class="relative py-20 md:py-28">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 reveal">
+        <div class="max-w-2xl">
+          <span class="text-sm font-semibold text-accent uppercase tracking-[0.2em]">Náš sklad</span>
+          <h3 class="mt-3 font-display text-3xl md:text-5xl font-bold text-white tracking-tight">Auta připravená k prodeji</h3>
+          <p class="mt-3 text-zinc-400">Každý vůz prošel naší technickou i právní prověrkou. Vyber podle účelu.</p>
+        </div>
+        <div id="filterBar" class="flex flex-wrap gap-2">
+          <button data-filter="vse" class="filter-btn rounded-xl px-4 py-2 text-sm font-medium transition">Vše</button>
+          <button data-filter="sportovni" class="filter-btn rounded-xl px-4 py-2 text-sm font-medium transition">Sportovní</button>
+          <button data-filter="denni" class="filter-btn rounded-xl px-4 py-2 text-sm font-medium transition">Denní ježdění</button>
+          <button data-filter="investicni" class="filter-btn rounded-xl px-4 py-2 text-sm font-medium transition">Investiční</button>
+        </div>
+      </div>
+      <div id="carGrid" class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================================
+       3. KALKULAČKA ZISKU  (interaktivní – ukázka produktu)
+  ===================================================================== -->
+  <section id="kalkulacka" class="relative py-20 md:py-28 border-y border-white/5 bg-ink-900/40">
+    <div class="absolute right-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-accent/5 blur-[130px] pointer-events-none"></div>
+    <div class="mx-auto max-w-7xl px-6 grid lg:grid-cols-2 gap-12 items-center">
+      <div class="reveal">
+        <span class="text-sm font-semibold text-accent uppercase tracking-[0.2em]">Ochutnávka nástroje PROFÍK</span>
+        <h3 class="mt-3 font-display text-3xl md:text-5xl font-bold text-white tracking-tight">Spočítej si flip<br/>za 10 vteřin.</h3>
+        <p class="mt-4 text-zinc-400 max-w-md">
+          Tohle je zjednodušená verze kalkulačky, kterou členové PROFÍK používají denně.
+          Zadej čísla a hned uvidíš čistý zisk, marži i ROI.
+        </p>
+        <a href="#cenik" class="mt-6 inline-flex items-center gap-2 text-accent font-semibold hover:gap-3 transition-all">
+          Odemknout plnou verzi <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+
+      <!-- Kalkulačka -->
+      <div class="reveal rounded-3xl border border-white/10 bg-ink-850 p-7 md:p-8 shadow-soft">
+        <div class="space-y-6">
+          <!-- Vstupy -->
+          <div>
+            <div class="flex justify-between text-sm mb-2"><label class="text-zinc-400">Nákupní cena</label><span id="buyOut" class="font-semibold text-white">350 000 Kč</span></div>
+            <input id="buy" type="range" min="50000" max="2000000" step="10000" value="350000" class="w-full accent-accent">
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2"><label class="text-zinc-400">Náklady (oprava, detailing, inzerce)</label><span id="costOut" class="font-semibold text-white">35 000 Kč</span></div>
+            <input id="cost" type="range" min="0" max="400000" step="5000" value="35000" class="w-full accent-accent">
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2"><label class="text-zinc-400">Prodejní cena</label><span id="sellOut" class="font-semibold text-white">460 000 Kč</span></div>
+            <input id="sell" type="range" min="50000" max="2500000" step="10000" value="460000" class="w-full accent-accent">
+          </div>
+
+          <!-- Výsledek -->
+          <div class="rounded-2xl bg-ink-950 border border-white/10 p-5">
+            <div class="flex items-end justify-between">
+              <span class="text-sm text-zinc-400">Čistý zisk</span>
+              <span id="profitOut" class="font-display text-4xl font-bold text-accent">75 000 Kč</span>
+            </div>
+            <!-- Vizuální poměr -->
+            <div class="mt-4 h-2.5 rounded-full bg-ink-700 overflow-hidden">
+              <div id="profitBar" class="h-full rounded-full bg-accent transition-all duration-300" style="width:20%"></div>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-4 text-center">
+              <div class="rounded-xl bg-ink-850 py-3">
+                <div class="text-xs text-zinc-500">Marže</div>
+                <div id="marginOut" class="mt-0.5 font-display text-xl font-bold text-white">16 %</div>
+              </div>
+              <div class="rounded-xl bg-ink-850 py-3">
+                <div class="text-xs text-zinc-500">ROI</div>
+                <div id="roiOut" class="mt-0.5 font-display text-xl font-bold text-white">19 %</div>
+              </div>
+            </div>
+            <p id="hint" class="mt-4 text-xs text-zinc-500"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================================
+       4. EDUKACE & KOMUNITA
+  ===================================================================== -->
+  <section id="edukace" class="relative py-20 md:py-28">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="max-w-2xl reveal">
+        <span class="text-sm font-semibold text-accent uppercase tracking-[0.2em]">Proč se to učit u nás</span>
+        <h3 class="mt-3 font-display text-3xl md:text-5xl font-bold text-white tracking-tight">Flipování není štěstí.<br/>Je to systém.</h3>
+        <p class="mt-3 text-zinc-400">Dáme ti přesně to, co odděluje amatéra od profíka, který vydělává konzistentně.</p>
+      </div>
+      <div id="benefitGrid" class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================================
+       5. TESTIMONIALY
+  ===================================================================== -->
+  <section class="relative py-20 md:py-24 border-y border-white/5 bg-ink-900/40">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="text-sm font-semibold text-accent uppercase tracking-[0.2em]">Příběhy členů</span>
+        <h3 class="mt-3 font-display text-3xl md:text-4xl font-bold text-white tracking-tight">Čísla, ne sliby.</h3>
+      </div>
+      <div id="reviewGrid" class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================================
+       6. CENÍK
+  ===================================================================== -->
+  <section id="cenik" class="relative py-20 md:py-28">
+    <div class="mx-auto max-w-7xl px-6">
+      <div class="mx-auto max-w-2xl text-center reveal">
+        <span class="text-sm font-semibold text-accent uppercase tracking-[0.2em]">Členství</span>
+        <h3 class="mt-3 font-display text-3xl md:text-5xl font-bold text-white tracking-tight">Vyber si svou rychlost růstu</h3>
+        <p class="mt-3 text-zinc-400">Zruš kdykoli. Bez závazků. Prvních 7 dní se zárukou vrácení peněz.</p>
+      </div>
+      <div id="pricingGrid" class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 items-start"></div>
+      <p class="mt-8 text-center text-sm text-zinc-500">Ceny měsíčně vč. DPH. Roční platba = 2 měsíce zdarma.</p>
+    </div>
+  </section>
+
+  <!-- ====================================================================
+       7. FAQ (akordeon)
+  ===================================================================== -->
+  <section id="faq" class="relative py-20 md:py-28 border-t border-white/5">
+    <div class="mx-auto max-w-3xl px-6">
+      <div class="text-center reveal">
+        <span class="text-sm font-semibold text-accent uppercase tracking-[0.2em]">Časté dotazy</span>
+        <h3 class="mt-3 font-display text-3xl md:text-5xl font-bold text-white tracking-tight">Než se zeptáš</h3>
+      </div>
+      <div id="faqList" class="mt-12 space-y-3"></div>
+    </div>
+  </section>
+
+  <!-- ====================================================================
+       8. FOOTER
+  ===================================================================== -->
+  <footer id="footer" class="border-t border-white/5 bg-ink-900">
+    <div class="mx-auto max-w-7xl px-6 py-16">
+      <div class="rounded-3xl border border-white/10 bg-ink-850 p-8 md:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-soft reveal">
+        <div class="max-w-md">
+          <h3 class="font-display text-2xl font-bold text-white">Nezmeškej nové kusy a tipy</h3>
+          <p class="mt-2 text-zinc-400">Jednou týdně to nejlepší z bazaru a flipping světa. Žádný spam.</p>
+        </div>
+        <form id="newsletterForm" class="flex w-full max-w-md gap-3">
+          <input type="email" required placeholder="tvuj@email.cz" class="flex-1 rounded-xl border border-white/10 bg-ink-950 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20 transition" />
+          <button type="submit" class="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-ink-950 hover:brightness-110 transition shadow-glow whitespace-nowrap">Odebírat</button>
+        </form>
+      </div>
+
+      <div class="mt-12 grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div class="col-span-2">
+          <a href="#hero" class="flex items-center gap-2.5">
+            <span class="grid place-items-center w-10 h-10 rounded-xl bg-ink-850 border border-white/10">
+              <svg viewBox="0 0 40 40" class="w-7 h-7" aria-hidden="true">
+                <path d="M8 27a12 12 0 0 1 24 0" fill="none" stroke="#39FF14" stroke-width="2.6" stroke-linecap="round"/>
+                <path d="M20 26 L27.5 12.5" stroke="#39FF14" stroke-width="2.8" stroke-linecap="round"/>
+                <circle cx="20" cy="26" r="2.8" fill="#39FF14"/>
+              </svg>
+            </span>
+            <span class="font-display text-xl font-bold text-white">Flipuj<span class="text-accent">Káru</span></span>
+          </a>
+          <p class="mt-4 text-sm text-zinc-500 max-w-xs">Bazar prověřených aut &amp; vzdělávací platforma pro chytrý car flipping.</p>
+          <div class="mt-5 flex gap-3">
+            <a href="#" aria-label="Instagram" class="grid place-items-center w-10 h-10 rounded-xl border border-white/10 text-zinc-400 hover:text-accent hover:border-accent/40 transition"><i data-lucide="instagram" class="w-5 h-5"></i></a>
+            <a href="#" aria-label="YouTube" class="grid place-items-center w-10 h-10 rounded-xl border border-white/10 text-zinc-400 hover:text-accent hover:border-accent/40 transition"><i data-lucide="youtube" class="w-5 h-5"></i></a>
+            <a href="#" aria-label="Facebook" class="grid place-items-center w-10 h-10 rounded-xl border border-white/10 text-zinc-400 hover:text-accent hover:border-accent/40 transition"><i data-lucide="facebook" class="w-5 h-5"></i></a>
+            <a href="#" aria-label="TikTok" class="grid place-items-center w-10 h-10 rounded-xl border border-white/10 text-zinc-400 hover:text-accent hover:border-accent/40 transition"><i data-lucide="music-2" class="w-5 h-5"></i></a>
+          </div>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-white">Bazar</h4>
+          <ul class="mt-4 space-y-2.5 text-sm text-zinc-400">
+            <li><a href="#marketplace" class="hover:text-accent transition">Všechna auta</a></li>
+            <li><a href="#marketplace" class="hover:text-accent transition">Sportovní</a></li>
+            <li><a href="#marketplace" class="hover:text-accent transition">Investiční kusy</a></li>
+            <li><a href="#" class="hover:text-accent transition">Vykoupíme tvé auto</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-white">Akademie</h4>
+          <ul class="mt-4 space-y-2.5 text-sm text-zinc-400">
+            <li><a href="#cenik" class="hover:text-accent transition">Členství</a></li>
+            <li><a href="#kalkulacka" class="hover:text-accent transition">Kalkulačka zisku</a></li>
+            <li><a href="#edukace" class="hover:text-accent transition">Jak to funguje</a></li>
+            <li><a href="#faq" class="hover:text-accent transition">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-white">Společnost</h4>
+          <ul class="mt-4 space-y-2.5 text-sm text-zinc-400">
+            <li><a href="#" class="hover:text-accent transition">O nás</a></li>
+            <li><a href="#footer" class="hover:text-accent transition">Kontakt</a></li>
+            <li><a href="#" class="hover:text-accent transition">Obchodní podmínky</a></li>
+            <li><a href="#" class="hover:text-accent transition">Ochrana údajů (GDPR)</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-12 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
+        <p>© 2026 FlipujKáru s.r.o. — Všechna práva vyhrazena.</p>
+        <p class="flex items-center gap-1.5">Vyrobeno s <i data-lucide="heart" class="w-4 h-4 text-accent"></i> v Česku</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ====================================================================
+       JS — DATA, RENDER, INTERAKCE
+  ===================================================================== -->
+  <script>
+    /* ---------- DATA ---------- */
+    const CARS = [
+      { brand:'BMW', model:'M2 Competition', year:2021, km:38500, price:1190000, category:'sportovni', badge:{text:'TOP STAV',tone:'accent'}, img:'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=70' },
+      { brand:'Audi', model:'A4 Avant 2.0 TDI', year:2019, km:96200, price:489000, category:'denni', badge:{text:'NOVINKA',tone:'new'}, img:'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=800&q=70' },
+      { brand:'Porsche', model:'911 Carrera (991)', year:2016, km:61000, price:2390000, category:'investicni', badge:{text:'INVESTICE',tone:'accent'}, img:'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=70' },
+      { brand:'Škoda', model:'Octavia RS', year:2020, km:72400, price:639000, category:'denni', badge:null, img:'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=800&q=70' },
+      { brand:'Mercedes-AMG', model:'C 63 S', year:2018, km:54300, price:1490000, category:'sportovni', badge:{text:'PRODÁNO',tone:'sold'}, img:'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=70' },
+      { brand:'Volkswagen', model:'Golf 7 GTI', year:2017, km:110800, price:429000, category:'denni', badge:{text:'TOP STAV',tone:'accent'}, img:'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&w=800&q=70' },
+      { brand:'Nissan', model:'GT-R R35', year:2015, km:47900, price:1990000, category:'investicni', badge:{text:'NOVINKA',tone:'new'}, img:'https://images.unsplash.com/photo-1606152421802-db97b9c7a11b?auto=format&fit=crop&w=800&q=70' },
+      { brand:'Toyota', model:'Supra A90', year:2020, km:29500, price:1290000, category:'investicni', badge:{text:'INVESTICE',tone:'accent'}, img:'https://images.unsplash.com/photo-1621135802920-133df287f89c?auto=format&fit=crop&w=800&q=70' },
+      { brand:'Ford', model:'Mustang GT 5.0', year:2019, km:41200, price:999000, category:'sportovni', badge:null, img:'https://images.unsplash.com/photo-1584345604476-8ec5e12e42dd?auto=format&fit=crop&w=800&q=70' },
+    ];
+    const BENEFITS = [
+      { icon:'database', title:'Přístup k datům', text:'Reálné prodejní ceny, historie modelů a poptávka — víš, co se vyplatí koupit.' },
+      { icon:'users', title:'Komunita', text:'Uzavřený Discord s lidmi, co flipují denně. Sdílíme dealy i chyby.' },
+      { icon:'compass', title:'Mentoring', text:'Krok za krokem od profíků. Provedeme tě prvním nákupem i prodejem.' },
+      { icon:'shield-check', title:'Právní jistota', text:'Smlouvy, daně, reklamace. Flipuj bezpečně a bez nepříjemných překvapení.' },
+    ];
+    const REVIEWS = [
+      { name:'Martin K.', role:'Člen 8 měsíců', initials:'MK', text:'První flip mi vydělal 62 000 Kč čistého. Kalkulačka a komunita mi ušetřily desítky chyb.', stat:'+62 000 Kč' },
+      { name:'Tereza V.', role:'Členka 1 rok', initials:'TV', text:'Z koníčku se stal vedlejší příjem. Za rok 9 aut, průměrná marže 18 %.', stat:'9 flipů / rok' },
+      { name:'David P.', role:'Mentoring', initials:'DP', text:'Mentoring se mi vrátil hned u druhého auta. Analýza inzerátu od týmu = jiná liga.', stat:'ROI 240 %' },
+    ];
+    const PLANS = [
+      { name:'KLASIK', price:490, tagline:'Pro start a první orientaci', featured:false,
+        features:['Základní vzdělávací materiály','Přístup do Discord komunity','Týdenní newsletter s tipy','Knihovna šablon smluv'], cta:'Začít s Klasikem' },
+      { name:'PROFÍK', price:1290, tagline:'Pro ty, co to myslí vážně', featured:true,
+        features:['Vše z Klasik +','Insider tipy na konkrétní auta','Kalkulačky zisku a marže','Prioritní info o autech ze skladu','Měsíční živé Q&A s týmem'], cta:'Chci být Profík' },
+      { name:'MENTORING', price:3990, tagline:'Individuální přístup 1:1', featured:false,
+        features:['Vše z Profík +','Osobní mentor na call','Analýza tvých flipů přímo od nás','Revize konkrétních inzerátů','Přednostní výkup tvých aut'], cta:'Chci mentoring' },
+    ];
+    const FAQ = [
+      { q:'Potřebuju velký kapitál, abych mohl začít?', a:'Ne. Spousta členů startuje s autem za 80–150 tisíc. Učíme tě hospodařit s tím, co máš, a postupně škálovat.' },
+      { q:'Jsou auta v bazaru opravdu prověřená?', a:'Ano. Každý vůz má technickou prohlídku, ověřený původ a stav km. K autu dostaneš kompletní reporty.' },
+      { q:'Kolik času flipování zabere?', a:'Záleží na tobě. Většina členů věnuje 5–10 hodin týdně a zvládá 1–2 flipy měsíčně vedle práce.' },
+      { q:'Co když si nebudu vědět rady?', a:'Od toho je komunita a u plánu PROFÍK a MENTORING přímý přístup k týmu. Nikdy v tom nejsi sám.' },
+      { q:'Můžu členství kdykoliv zrušit?', a:'Ano, bez závazků. Navíc máš prvních 7 dní záruku vrácení peněz, pokud to není pro tebe.' },
+    ];
+
+    /* ---------- Formátování ---------- */
+    const czk = (n) => new Intl.NumberFormat('cs-CZ').format(Math.round(n)) + ' Kč';
+    const kmf = (n) => new Intl.NumberFormat('cs-CZ').format(n) + ' km';
+    const badgeClass = (t) => ({accent:'bg-accent text-ink-950',new:'bg-white text-ink-950',sold:'bg-red-500/90 text-white'}[t] || 'bg-accent text-ink-950');
+    /* Fallback obrázek (barevný blok + ikona auta), kdyby Unsplash selhal */
+    const FALLBACK = "this.onerror=null;this.style.display='none';this.parentElement.classList.add('img-fallback');";
+
+    /* ---------- RENDER: auta ---------- */
+    function renderCars(){
+      document.getElementById('carGrid').innerHTML = CARS.map((c,i)=>{
+        const sold = c.badge && c.badge.tone==='sold';
+        return `
+        <article class="car-card tilt reveal group rounded-2xl border border-white/10 bg-ink-850 overflow-hidden hover:border-accent/40 hover:shadow-soft transition" data-category="${c.category}" style="transition-delay:${i*40}ms">
+          <div class="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-ink-700 to-ink-850 grid place-items-center">
+            <i data-lucide="car-front" class="absolute w-14 h-14 text-white/10"></i>
+            <img src="${c.img}" alt="${c.brand} ${c.model}" loading="lazy" onerror="${FALLBACK}"
+                 class="relative w-full h-full object-cover ${sold?'opacity-40 grayscale':'group-hover:scale-110'} transition duration-700" />
+            ${c.badge?`<span class="absolute top-3 left-3 rounded-lg px-2.5 py-1 text-xs font-bold tracking-wide ${badgeClass(c.badge.tone)}">${c.badge.text}</span>`:''}
+            <span class="absolute bottom-3 right-3 rounded-lg bg-ink-950/80 backdrop-blur px-2.5 py-1 text-xs font-medium text-white border border-white/10">${c.category==='sportovni'?'Sportovní':c.category==='investicni'?'Investiční':'Denní'}</span>
+          </div>
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div><h4 class="font-display font-bold text-white leading-tight">${c.brand}</h4><p class="text-sm text-zinc-400">${c.model}</p></div>
+              <span class="shrink-0 rounded-lg border border-white/10 px-2 py-0.5 text-xs text-zinc-400">${c.year}</span>
+            </div>
+            <div class="mt-4 flex items-center gap-4 text-sm text-zinc-400">
+              <span class="inline-flex items-center gap-1.5"><i data-lucide="gauge" class="w-4 h-4 text-accent"></i>${kmf(c.km)}</span>
+              <span class="inline-flex items-center gap-1.5"><i data-lucide="calendar" class="w-4 h-4 text-accent"></i>${c.year}</span>
+            </div>
+            <div class="mt-5 flex items-center justify-between">
+              <span class="font-display text-xl font-bold text-white">${czk(c.price)}</span>
+              <button ${sold?'disabled':''} class="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition ${sold?'cursor-not-allowed bg-white/5 text-zinc-500':'bg-accent text-ink-950 hover:brightness-110 hover:gap-2.5'}">
+                ${sold?'Prodáno':'Detail'} ${sold?'':'<i data-lucide="arrow-up-right" class="w-4 h-4"></i>'}
+              </button>
+            </div>
+          </div>
+        </article>`;
+      }).join('');
+    }
+
+    /* ---------- RENDER: výhody ---------- */
+    function renderBenefits(){
+      document.getElementById('benefitGrid').innerHTML = BENEFITS.map((b,i)=>`
+        <div class="reveal rounded-2xl border border-white/10 bg-ink-850 p-6 hover:border-accent/40 hover:-translate-y-1 transition" style="transition-delay:${i*60}ms">
+          <div class="grid place-items-center w-12 h-12 rounded-xl bg-accent-soft text-accent"><i data-lucide="${b.icon}" class="w-6 h-6"></i></div>
+          <h4 class="mt-5 font-display font-bold text-white">${b.title}</h4>
+          <p class="mt-2 text-sm leading-relaxed text-zinc-400">${b.text}</p>
+        </div>`).join('');
+    }
+
+    /* ---------- RENDER: testimonialy ---------- */
+    function renderReviews(){
+      document.getElementById('reviewGrid').innerHTML = REVIEWS.map((r,i)=>`
+        <div class="reveal rounded-2xl border border-white/10 bg-ink-850 p-6 flex flex-col" style="transition-delay:${i*70}ms">
+          <div class="flex gap-1 text-accent">${'<i data-lucide=\\'star\\' class=\\'w-4 h-4 fill-accent\\'></i>'.repeat(5)}</div>
+          <p class="mt-4 text-zinc-300 leading-relaxed flex-1">"${r.text}"</p>
+          <div class="mt-6 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="grid place-items-center w-10 h-10 rounded-full bg-accent-soft text-accent font-bold text-sm">${r.initials}</div>
+              <div><div class="text-sm font-semibold text-white">${r.name}</div><div class="text-xs text-zinc-500">${r.role}</div></div>
+            </div>
+            <span class="rounded-lg bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent">${r.stat}</span>
+          </div>
+        </div>`).join('');
+    }
+
+    /* ---------- RENDER: ceník ---------- */
+    function renderPlans(){
+      document.getElementById('pricingGrid').innerHTML = PLANS.map((p)=>`
+        <div class="reveal relative rounded-3xl p-7 transition ${p.featured?'ring-anim bg-ink-850 shadow-glow md:-translate-y-4 md:scale-[1.04]':'border border-white/10 bg-ink-850 hover:border-white/20 hover:-translate-y-1'}">
+          ${p.featured?`<span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-1 text-xs font-bold text-ink-950 whitespace-nowrap">NEJOBLÍBENĚJŠÍ</span>`:''}
+          <h4 class="font-display text-sm font-bold tracking-[0.2em] ${p.featured?'text-accent':'text-zinc-400'}">${p.name}</h4>
+          <p class="mt-1 text-sm text-zinc-500">${p.tagline}</p>
+          <div class="mt-5 flex items-end gap-1"><span class="font-display text-4xl font-bold text-white">${czk(p.price)}</span><span class="mb-1 text-sm text-zinc-500">/ měsíc</span></div>
+          <ul class="mt-6 space-y-3 text-sm">
+            ${p.features.map(f=>`<li class="flex items-start gap-2.5 ${f.includes('+')?'font-semibold text-white':'text-zinc-300'}"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0 text-accent"></i>${f}</li>`).join('')}
+          </ul>
+          <a href="#footer" class="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 font-semibold transition ${p.featured?'bg-accent text-ink-950 hover:brightness-110':'border border-white/15 bg-white/5 text-white hover:bg-white/10'}">${p.cta}</a>
+        </div>`).join('');
+    }
+
+    /* ---------- RENDER: FAQ ---------- */
+    function renderFaq(){
+      document.getElementById('faqList').innerHTML = FAQ.map((f,i)=>`
+        <div class="reveal rounded-2xl border border-white/10 bg-ink-850 overflow-hidden" style="transition-delay:${i*40}ms">
+          <button class="faq-q w-full flex items-center justify-between gap-4 p-5 text-left" aria-expanded="false">
+            <span class="font-medium text-white">${f.q}</span>
+            <i data-lucide="plus" class="faq-icon w-5 h-5 text-accent shrink-0 transition-transform"></i>
+          </button>
+          <div class="faq-a grid grid-rows-[0fr] transition-all duration-300"><div class="overflow-hidden"><p class="px-5 pb-5 text-sm leading-relaxed text-zinc-400">${f.a}</p></div></div>
+        </div>`).join('');
+    }
+
+    /* ---------- INTERAKCE: filtr ---------- */
+    function setupFilter(){
+      const buttons = document.querySelectorAll('.filter-btn');
+      const setActive = (btn)=>{
+        buttons.forEach(b=>{b.classList.remove('bg-accent','text-ink-950');b.classList.add('border','border-white/10','text-zinc-300','hover:border-accent/40');});
+        btn.classList.add('bg-accent','text-ink-950');btn.classList.remove('border','border-white/10','text-zinc-300','hover:border-accent/40');
+      };
+      buttons.forEach(btn=>btn.addEventListener('click',()=>{
+        setActive(btn); const f=btn.dataset.filter;
+        document.querySelectorAll('.car-card').forEach(card=>card.classList.toggle('is-hidden', !(f==='vse'||card.dataset.category===f)));
+      }));
+      setActive(document.querySelector('[data-filter="vse"]'));
+    }
+
+    /* ---------- INTERAKCE: kalkulačka zisku ---------- */
+    function setupCalc(){
+      const buy=document.getElementById('buy'), cost=document.getElementById('cost'), sell=document.getElementById('sell');
+      const out={buy:buyOut,cost:costOut,sell:sellOut,profit:profitOut,margin:marginOut,roi:roiOut,bar:profitBar,hint:document.getElementById('hint')};
+      function update(){
+        const b=+buy.value, c=+cost.value, s=+sell.value;
+        const invest=b+c, profit=s-invest;
+        const margin = s>0 ? (profit/s)*100 : 0;
+        const roi = invest>0 ? (profit/invest)*100 : 0;
+        out.buy.textContent=czk(b); out.cost.textContent=czk(c); out.sell.textContent=czk(s);
+        out.profit.textContent=(profit>=0?'+ ':'– ')+czk(Math.abs(profit));
+        out.profit.style.color = profit>=0 ? '#39FF14' : '#f87171';
+        out.margin.textContent=Math.round(margin)+' %';
+        out.roi.textContent=Math.round(roi)+' %';
+        out.bar.style.width=Math.max(2,Math.min(100,Math.abs(margin)))+'%';
+        out.bar.style.background = profit>=0 ? '#39FF14' : '#f87171';
+        out.hint.textContent = profit<0 ? '⚠️ Tenhle deal je ztrátový — sniž nákup nebo náklady.'
+          : margin<10 ? 'Tenká marže. Profíci cílí na 12–20 %.'
+          : margin<25 ? '👍 Zdravý flip. Přesně tahle čísla učíme.'
+          : '🔥 Výborná marže — jen pozor na reálnost prodejní ceny.';
+      }
+      [buy,cost,sell].forEach(el=>el.addEventListener('input',update));
+      update();
+    }
+
+    /* ---------- INTERAKCE: FAQ akordeon ---------- */
+    function setupFaqToggle(){
+      document.querySelectorAll('.faq-q').forEach(btn=>btn.addEventListener('click',()=>{
+        const open = btn.getAttribute('aria-expanded')==='true';
+        btn.setAttribute('aria-expanded', String(!open));
+        const panel = btn.nextElementSibling, icon = btn.querySelector('.faq-icon');
+        panel.style.gridTemplateRows = open ? '0fr' : '1fr';
+        icon.style.transform = open ? 'rotate(0deg)' : 'rotate(45deg)';
+        btn.parentElement.classList.toggle('border-accent/40', !open);
+      }));
+    }
+
+    /* ---------- INTERAKCE: scroll reveal ---------- */
+    function setupReveal(){
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+      },{threshold:0.12});
+      document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+    }
+
+    /* ---------- INTERAKCE: animovaná počítadla ---------- */
+    function setupCounters(){
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(!e.isIntersecting) return;
+          const el=e.target, end=parseFloat(el.dataset.count), dec=+(el.dataset.decimals||0), suf=el.dataset.suffix||'';
+          const dur=1400, t0=performance.now();
+          const tick=(t)=>{ const p=Math.min((t-t0)/dur,1); const ease=1-Math.pow(1-p,3);
+            const val=end*ease; el.textContent=(dec?val.toFixed(dec):Math.round(val).toLocaleString('cs-CZ'))+suf;
+            if(p<1) requestAnimationFrame(tick); };
+          requestAnimationFrame(tick); io.unobserve(el);
+        });
+      },{threshold:0.5});
+      document.querySelectorAll('[data-count]').forEach(el=>io.observe(el));
+    }
+
+    /* ---------- INTERAKCE: nav scroll stav ---------- */
+    function setupNav(){
+      const nav=document.getElementById('nav');
+      const onScroll=()=>nav.classList.toggle('bg-ink-950/80', window.scrollY>20)
+        || nav.classList.toggle('backdrop-blur-xl', window.scrollY>20)
+        || nav.classList.toggle('border-white/5', window.scrollY>20);
+      window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+    }
+
+    /* ---------- INTERAKCE: hero spotlight ---------- */
+    function setupSpotlight(){
+      const hero=document.getElementById('hero'), sp=document.getElementById('spotlight');
+      hero.addEventListener('pointermove',(e)=>{ const r=hero.getBoundingClientRect();
+        sp.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
+        sp.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%'); });
+    }
+
+    /* ---------- INTERAKCE: 3D tilt na kartách aut ---------- */
+    function setupTilt(){
+      if(window.matchMedia('(hover:none)').matches) return; // ne na dotykových
+      document.querySelectorAll('.tilt').forEach(card=>{
+        card.addEventListener('pointermove',(e)=>{ const r=card.getBoundingClientRect();
+          const rx=((e.clientY-r.top)/r.height-0.5)*-5, ry=((e.clientX-r.left)/r.width-0.5)*5;
+          card.style.transform=`perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`; });
+        card.addEventListener('pointerleave',()=>card.style.transform='');
+      });
+    }
+
+    /* ---------- INTERAKCE: mobilní menu + newsletter ---------- */
+    document.getElementById('menuBtn').addEventListener('click',()=>document.getElementById('mobileMenu').classList.toggle('hidden'));
+    document.querySelectorAll('#mobileMenu a').forEach(a=>a.addEventListener('click',()=>document.getElementById('mobileMenu').classList.add('hidden')));
+    document.getElementById('newsletterForm').addEventListener('submit',(e)=>{
+      e.preventDefault(); const btn=e.target.querySelector('button');
+      btn.textContent='Přihlášeno ✓'; btn.classList.add('bg-white'); e.target.querySelector('input').value='';
+      setTimeout(()=>{btn.textContent='Odebírat';btn.classList.remove('bg-white');},2500);
+    });
+
+    /* ---------- INIT ---------- */
+    renderCars(); renderBenefits(); renderReviews(); renderPlans(); renderFaq();
+    setupFilter(); setupCalc(); setupFaqToggle(); setupReveal(); setupCounters();
+    setupNav(); setupSpotlight(); setupTilt();
+    lucide.createIcons();
+
+    /* Fallback styling pro obrázky (přidá ikonu auta jako pozadí bloku) */
+    const style=document.createElement('style');
+    style.textContent='.img-fallback{background:linear-gradient(135deg,#26262e,#141418);}';
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>
