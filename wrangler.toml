@@ -2,3 +2,7 @@ name = "flipujkaru"
 compatibility_date = "2026-07-19"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "CALC_USAGE"
+id = "94d2387659cf45fe86baf0240ee560f7"

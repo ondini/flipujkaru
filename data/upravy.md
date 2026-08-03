@@ -15,3 +15,10 @@
 - take gdpr, cookies, obchdoni podminky pdfs and convert them to pages on the website (with some url), links from footer
 
 - zmenit 7 dní záruka na 2 měsíce záruka - pokud do te doby neudela zakaznik uspesny flip, vracime penize
+
+
+-- 
+
+system flipu
+zebricky
+odstranit google, heureka

@@ -24,10 +24,20 @@ function AlgoFeed() {
   const order = useRef(shuffled(ALGO_FEED));
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 2200);
-    return () => clearInterval(id);
+    let id;
+    const scheduleNext = () => {
+      const delay = 5000 + Math.random() * 10000; // 5–15 s, nepravidelně
+      id = setTimeout(() => {
+        setTick((t) => t + 1);
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+    return () => clearTimeout(id);
   }, []);
-  const items = Array.from({ length: 4 }, (_, i) => order.current[(tick + i) % order.current.length]);
+  // Position 0 = nejnovější (nahoře), starší záznamy je posouvá dolů.
+  const len = order.current.length;
+  const items = Array.from({ length: 4 }, (_, i) => order.current[((tick - i) % len + len) % len]);
 
   return (
     <div className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-ink-950 p-5">

@@ -403,13 +403,6 @@ export const GUARANTEES = [
   { icon: 'Headset', title: 'Podpora 7 dní v týdnu', text: 'Píšou ti reální lidé, ne bot. Odpovídáme obvykle do pár hodin.' },
 ];
 
-/** Hodnocení / sociální důkaz (loga a skóre) */
-export const RATINGS = [
-  { source: 'Google', score: '4,9', count: '327 hodnocení', icon: 'Star' },
-  { source: 'Heureka', score: '98 %', count: 'Ověřeno zákazníky', icon: 'BadgeCheck' },
-  { source: 'Členů akademie', score: '1 800+', count: 'aktivní komunita', icon: 'Users' },
-];
-
 /** „Jak prověřujeme auta" — kroky budující důvěru u bazaru */
 export const VERIFY_STEPS = [
   { icon: 'FileSearch', title: 'Původ a historie', text: 'Prověříme VIN, počet majitelů, servisní historii i skutečný stav km. Kontrolujeme odcizení, leasing a zástavy.' },
