@@ -70,7 +70,7 @@ export default function Hero() {
 
           {/* Zhodnocení úspor — proč flipovat auta místo nechat peníze ležet */}
           <div className="mt-4 max-w-xl border-l-2 border-accent bg-accent-soft/60 rounded-r-xl px-4 py-3 text-sm leading-relaxed text-zinc-300">
-            Zatímco peníze na spořicím účtu jen pomalu ztrácí hodnotu, auto pod cenou ti může za pár týdnů vydělat víc než banka za rok.
+            Peníze na spořicím účtu jen pomalu ztrácí hodnotu — auto pod cenou ti za pár týdnů vydělá víc než banka za rok.
           </div>
 
           <div className="mt-9 flex flex-col sm:flex-row gap-4">

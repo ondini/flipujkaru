@@ -126,7 +126,7 @@ export default function Marketplace() {
             </p>
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {FLIPS.map((flip, i) => (
-                <Reveal key={flip.brand + flip.model} delay={i * 40}>
+                <Reveal key={flip.brand + flip.model + i} delay={i * 40}>
                   <FlipCard flip={flip} onOpen={() => setActiveFlip(flip)} />
                 </Reveal>
               ))}

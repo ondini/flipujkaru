@@ -38,7 +38,7 @@ export default function Mission() {
 
             {/* Klíčové sdělení: proč zrovna auta, ne byty */}
             <div className="mt-6 border-l-2 border-accent bg-accent-soft/60 rounded-r-xl px-4 py-3 text-sm leading-relaxed text-zinc-300">
-              Flipování bytů nemůže dělat každý — chce to statisíce nastřádané stranou.
+              Flipování bytů zvládne málokdo — chce to statisíce nastřádané stranou.
               <span className="text-white font-semibold"> Flipování aut zvládne skoro každý, kdo chce makat.</span>
             </div>
 
