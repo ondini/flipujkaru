@@ -69,7 +69,7 @@ export default function Hero() {
           </p>
 
           {/* Zhodnocení úspor — proč flipovat auta místo nechat peníze ležet */}
-          <div className="mt-4 max-w-xl border-l-2 border-accent bg-accent-soft/60 rounded-r-xl px-4 py-3 text-sm leading-relaxed text-zinc-300">
+          <div className="mt-4 max-w-xl rounded-2xl border border-accent/30 bg-accent-soft px-4 py-3 text-sm font-semibold leading-relaxed text-accent">
             Peníze na spořicím účtu jen pomalu ztrácí hodnotu — auto pod cenou ti za pár týdnů vydělá víc než banka za rok.
           </div>
 

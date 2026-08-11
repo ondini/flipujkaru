@@ -113,7 +113,7 @@ export default function ProfitCalculator() {
           <p className="mt-4 max-w-md text-zinc-400">
             {t.calc_subtitle || 'Tohle je zjednodušená verze kalkulačky, kterou členové naší komunity používají denně. Zadej čísla a hned uvidíš čistý zisk, marži i ROI.'}
           </p>
-          <div className="mt-4 max-w-md border-l-2 border-accent bg-accent-soft/60 rounded-r-xl px-4 py-3 text-sm leading-relaxed text-zinc-300">
+          <div className="mt-4 max-w-md rounded-2xl border border-accent/30 bg-accent-soft px-4 py-3 text-sm font-semibold leading-relaxed text-accent">
             Žádná spekulace, žádná náhoda — systematický nástroj, kterým členové naší komunity zhodnocují úspory.
           </div>
           <a href="#cenik" className="mt-6 inline-flex items-center gap-2 font-semibold text-accent transition-all hover:gap-3">
