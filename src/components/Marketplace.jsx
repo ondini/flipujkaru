@@ -26,15 +26,34 @@ const mapCar = (r) => {
   };
 };
 
+// Prodané auto → tvar, který očekává karta úspěšného flipu
+const mapFlip = (r) => {
+  const images = Array.isArray(r.images) && r.images.length ? r.images : r.image_url ? [r.image_url] : [];
+  const buy = Number(r.buy_price) || 0;
+  const repair = Number(r.repair_cost) || 0;
+  const sell = Number(r.sell_price) || Number(r.price) || 0;
+  return {
+    brand: r.brand, model: r.model, year: r.year,
+    buy, repair, sell,
+    weeks: r.flip_weeks || null,
+    img: images[0] || r.image_url,
+    location: r.location || '',
+    found: r.found_note || '',
+    problems: Array.isArray(r.problems) ? r.problems : [],
+    work: Array.isArray(r.work) ? r.work : [],
+    summary: r.story || '',
+  };
+};
+
 export default function Marketplace() {
   const [view, setView] = useState('sale'); // 'sale' | 'flips'
   const [filter, setFilter] = useState('vse');
   const [activeFlip, setActiveFlip] = useState(null); // otevřený detail flipu
   const [activeCar, setActiveCar] = useState(null); // otevřený detail auta
-  const [allCars, setAllCars] = useState(CARS); // fallback = statická data, dokud nenačteme z DB
+  const [rows, setRows] = useState(null); // řádky z DB (null = ještě nenačteno → statický fallback)
   const { siteText: t } = useApp();
 
-  // Načtení aut z databáze (publikovaná). Když DB není/prázdná, zůstanou statická.
+  // Načtení aut z databáze (kromě konceptů). Když DB není/prázdná, zůstanou statická.
   useEffect(() => {
     if (!supabase) return;
     supabase
@@ -44,13 +63,19 @@ export default function Marketplace() {
       .order('sort', { ascending: true })
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (!error && data && data.length) setAllCars(data.map(mapCar));
+        if (!error && data) setRows(data);
       });
   }, []);
 
+  // Auta na prodej = vše kromě prodaných; prodaná se přesouvají do „Úspěšné flipy".
+  const usingDb = rows && rows.length > 0;
+  const saleCars = usingDb ? rows.filter((r) => r.status !== 'sold').map(mapCar) : CARS;
+  const soldFlips = usingDb ? rows.filter((r) => r.status === 'sold').map(mapFlip) : [];
+  const flips = soldFlips.length ? soldFlips : FLIPS; // dokud nejsou prodaná auta, ukaž ukázky
+
   const cars = useMemo(
-    () => (filter === 'vse' ? allCars : allCars.filter((c) => c.category === filter)),
-    [filter, allCars]
+    () => (filter === 'vse' ? saleCars : saleCars.filter((c) => c.category === filter)),
+    [filter, saleCars]
   );
 
   return (
@@ -125,7 +150,7 @@ export default function Marketplace() {
               Reálná čísla členů akademie. <span className="text-accent">Nákup → po opravě → prodej</span> — a co zbylo v kapse.
             </p>
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {FLIPS.map((flip, i) => (
+              {flips.map((flip, i) => (
                 <Reveal key={flip.brand + flip.model + i} delay={i * 40}>
                   <FlipCard flip={flip} onOpen={() => setActiveFlip(flip)} />
                 </Reveal>

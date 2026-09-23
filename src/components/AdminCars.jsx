@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Car, Plus, Pencil, Trash2, Save, X, Upload, Loader2, ImageOff, Star } from 'lucide-react';
+import { Car, Plus, Pencil, Trash2, Save, X, Upload, Loader2, ImageOff, Star, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 import { optimizeImage } from '../lib/optimizeImage.js';
 import { czk } from '../data/content.js';
@@ -8,6 +8,9 @@ const EMPTY = {
   brand: '', model: '', year: 2020, km: 0, price: 0, category: 'denni',
   engine: '', condition: 'A', vat: true, badge_text: '', badge_tone: '',
   image_url: '', images: [], status: 'published', sort: 0,
+  // Příběh flipu (ukáže se v „Úspěšné flipy" po označení Prodáno)
+  buy_price: '', repair_cost: '', sell_price: '', flip_weeks: '',
+  location: '', found_note: '', problems: [], work: [], story: '',
 };
 
 const CATEGORIES = [
@@ -99,7 +102,11 @@ export default function AdminCars() {
 /* ---------- Formulář auta ---------- */
 function CarForm({ car, onClose, onSaved }) {
   const initImages = car?.images?.length ? car.images : car?.image_url ? [car.image_url] : [];
-  const [f, setF] = useState({ ...EMPTY, ...car, images: initImages });
+  const [f, setF] = useState({
+    ...EMPTY, ...car, images: initImages,
+    problems: Array.isArray(car?.problems) ? car.problems : [],
+    work: Array.isArray(car?.work) ? car.work : [],
+  });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -136,11 +143,18 @@ function CarForm({ car, onClose, onSaved }) {
     setSaving(true); setError('');
     // Doplň tón štítku podle vybraného textu
     const tone = BADGES.find((b) => b.v === f.badge_text)?.tone || null;
+    const num = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
     const payload = {
       brand: f.brand, model: f.model, year: Number(f.year) || null, km: Number(f.km) || null,
       price: Number(f.price) || null, category: f.category, engine: f.engine || null,
       condition: f.condition || null, vat: !!f.vat, badge_text: f.badge_text || null,
       badge_tone: tone, images: f.images, image_url: f.images[0] || null, status: f.status, sort: Number(f.sort) || 0,
+      // Příběh flipu
+      buy_price: num(f.buy_price), repair_cost: num(f.repair_cost), sell_price: num(f.sell_price),
+      flip_weeks: num(f.flip_weeks), location: f.location || null, found_note: f.found_note || null,
+      problems: (f.problems || []).filter((x) => x && x.trim()),
+      work: (f.work || []).filter((x) => x && x.trim()),
+      story: f.story || null,
     };
     const q = car.id ? supabase.from('cars').update(payload).eq('id', car.id) : supabase.from('cars').insert(payload);
     const { error } = await q;
@@ -213,6 +227,29 @@ function CarForm({ car, onClose, onSaved }) {
         </label>
       </div>
 
+      {/* Příběh flipu — ukáže se v sekci „Úspěšné flipy", jakmile má vůz stav Prodáno */}
+      <div className="rounded-2xl border border-white/10 bg-ink-850 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="inline-flex items-center gap-2 font-display font-bold text-white"><TrendingUp className="h-4 w-4 text-accent" /> Příběh flipu</h3>
+          <span className="text-xs text-zinc-500">Zobrazí se v „Úspěšné flipy", jakmile nastavíš stav Prodáno</span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input label="Nákupní cena (Kč)" type="number" value={f.buy_price} onChange={(v) => set('buy_price', v)} />
+          <Input label="Náklady na opravu (Kč)" type="number" value={f.repair_cost} onChange={(v) => set('repair_cost', v)} />
+          <Input label="Prodejní cena (Kč)" type="number" value={f.sell_price} onChange={(v) => set('sell_price', v)} placeholder="výchozí = cena inzerátu" />
+          <Input label="Délka flipu (týdny)" type="number" value={f.flip_weeks} onChange={(v) => set('flip_weeks', v)} />
+          <Input label="Lokalita" value={f.location} onChange={(v) => set('location', v)} placeholder="Praha, Česko" className="sm:col-span-2" />
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-3">
+          <Textarea label="Jak jsme vůz našli" value={f.found_note} onChange={(v) => set('found_note', v)} rows={2} placeholder="Např. dovozový inzerát z Německa pod tržní cenou…" />
+          <ListArea label="Co bylo špatně" hint="každý bod na nový řádek" value={f.problems} onChange={(v) => set('problems', v)} />
+          <ListArea label="Co jsme udělali" hint="každý bod na nový řádek" value={f.work} onChange={(v) => set('work', v)} />
+          <Textarea label="Shrnutí / příběh" value={f.story} onChange={(v) => set('story', v)} rows={4} placeholder="Krátký příběh flipu — proč se povedl." />
+        </div>
+      </div>
+
       <div className="flex gap-3">
         <button type="submit" disabled={saving || uploading} className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-ink-950 shadow-glow transition enabled:hover:brightness-110 disabled:opacity-50">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Uložit
@@ -241,6 +278,32 @@ function Input({ label, value, onChange, type = 'text', className = '', ...props
       <span className="mb-1.5 block text-xs font-medium text-zinc-400">{label}</span>
       <input type={type} value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...props}
         className="w-full rounded-xl border border-white/10 bg-ink-950 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20" />
+    </label>
+  );
+}
+
+function Textarea({ label, value, onChange, rows = 3, className = '', ...props }) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1.5 block text-xs font-medium text-zinc-400">{label}</span>
+      <textarea rows={rows} value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...props}
+        className="w-full resize-y rounded-xl border border-white/10 bg-ink-950 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20" />
+    </label>
+  );
+}
+
+/** Víceřádkové pole → pole textů (jeden bod na řádek) */
+function ListArea({ label, hint, value, onChange }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+        {label}{hint && <span className="ml-1 font-normal text-zinc-600">· {hint}</span>}
+      </span>
+      <textarea
+        rows={3}
+        value={(value || []).join('\n')}
+        onChange={(e) => onChange(e.target.value.split('\n'))}
+        className="w-full resize-y rounded-xl border border-white/10 bg-ink-950 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20" />
     </label>
   );
 }

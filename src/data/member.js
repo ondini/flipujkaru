@@ -7,7 +7,7 @@ export const DASH_NAV = [
   { key: 'prehled', label: 'Přehled', icon: 'LayoutDashboard' },
   { key: 'flipy', label: 'Moje flipy', icon: 'TrendingUp' },
   { key: 'kalkulacka', label: 'Kalkulačka', icon: 'Calculator' },
-  { key: 'hlidac', label: 'Hlídací pes', icon: 'Radar' },
+  { key: 'doporucene', label: 'Doporučené flipy', icon: 'Sparkles' },
   { key: 'materialy', label: 'Mé materiály', icon: 'GraduationCap' },
   { key: 'komunita', label: 'Komunita', icon: 'Users' },
   { key: 'faktury', label: 'Faktury', icon: 'Receipt' },
@@ -18,7 +18,7 @@ export const DASH_NAV = [
 export const ONBOARDING = [
   { key: 'profil', label: 'Vyplň si profil', hint: 'Jméno a parametry hlídače' },
   { key: 'kurz', label: 'Projdi první lekci', hint: 'Základy car flippingu' },
-  { key: 'hlidac', label: 'Nastav hlídacího psa', hint: 'Značky, cena, lokality' },
+  { key: 'doporucene', label: 'Projdi doporučené flipy', hint: 'Značky, cena, rozdíl od trhu' },
   { key: 'flip', label: 'Zaznamenej první flip', hint: 'Sleduj svůj zisk' },
 ];
 
@@ -52,14 +52,6 @@ export const COURSES = [
   { title: 'Jak číst inzerát a odhalit vadu', lessons: 9, done: 6 },
   { title: 'Dovoz ze zahraničí krok za krokem', lessons: 8, done: 2 },
   { title: 'Vyjednávání a prodej se ziskem', lessons: 10, done: 0 },
-];
-
-/** Notifikace „hlídacího psa" (algoritmus) — auta dle parametrů člena */
-export const WATCH_ALERTS = [
-  { car: 'BMW 340i (F30)', spec: '3.0 R6 · 326 koní', loc: 'Mnichov, DE', price: 545000, market: 660000, time: 'před 4 min' },
-  { car: 'Audi S4 Avant', spec: '3.0 V6 TFSI · 354 koní', loc: 'Linec, AT', price: 690000, market: 815000, time: 'před 22 min' },
-  { car: 'VW Golf R Mk7', spec: '2.0 TSI · 310 koní', loc: 'Praha, CZ', price: 489000, market: 559000, time: 'před 1 h' },
-  { car: 'Mercedes A45 AMG', spec: '2.0 R4 · 381 koní', loc: 'Drážďany, DE', price: 720000, market: 845000, time: 'před 2 h' },
 ];
 
 /** Historie faktur */

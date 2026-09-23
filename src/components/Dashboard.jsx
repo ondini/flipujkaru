@@ -1,13 +1,16 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Radar, GraduationCap, Receipt, Settings, PiggyBank, Car, Trophy,
-  Bell, LogOut, ArrowLeft, ExternalLink, Download, Check, TrendingUp, ChevronRight, Type,
-  Calculator, Users, ArrowRight,
+  LogOut, ArrowLeft, ExternalLink, Download, Check, TrendingUp, ChevronRight, ChevronLeft, Type,
+  Calculator, Users, ArrowRight, Sparkles, SlidersHorizontal, RotateCcw, Table2, Gauge,
+  ArrowUpDown, ArrowUp, ArrowDown, Search, Loader2,
 } from 'lucide-react';
 import { useApp } from '../AppContext.jsx';
-import { czk } from '../data/content.js';
+import { czk, kmFmt } from '../data/content.js';
 import { supabase } from '../lib/supabase.js';
-import { DASH_NAV, DASH_STATS, COURSES, WATCH_ALERTS, INVOICES, ONBOARDING } from '../data/member.js';
+import { dealsApi } from '../lib/dealsApi.js';
+import { useUndervalued, useMobiledeManufacturers, useMobiledeModels } from '../hooks/useDeals.js';
+import { DASH_NAV, DASH_STATS, COURSES, INVOICES, ONBOARDING } from '../data/member.js';
 import { LogoMark } from './Logo.jsx';
 
 // Panely → lazy, načtou se až po kliknutí na danou záložku
@@ -17,7 +20,7 @@ const MyFlips = lazy(() => import('./dashboard/MyFlips.jsx'));
 const CalcPanel = lazy(() => import('./dashboard/CalcPanel.jsx'));
 const Community = lazy(() => import('./dashboard/Community.jsx'));
 
-const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, Users, TrendingUp };
+const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, Users, TrendingUp, Sparkles };
 const STAT_ICONS = { PiggyBank, Car, Trophy };
 
 export default function Dashboard() {
@@ -76,7 +79,7 @@ export default function Dashboard() {
             {tab === 'prehled' && <Overview user={user} planName={planName} backToSite={backToSite} setTab={setTab} />}
             {tab === 'flipy' && <MyFlips />}
             {tab === 'kalkulacka' && <CalcPanel />}
-            {tab === 'hlidac' && <Watchdog />}
+            {tab === 'doporucene' && <RecommendedFlips />}
             {tab === 'materialy' && <Materials />}
             {tab === 'komunita' && <Community />}
             {tab === 'faktury' && <Invoices planName={planName} />}
@@ -94,7 +97,7 @@ export default function Dashboard() {
 const QUICK = [
   { tab: 'flipy', label: 'Přidat flip', icon: TrendingUp },
   { tab: 'kalkulacka', label: 'Kalkulačka', icon: Calculator },
-  { tab: 'hlidac', label: 'Hlídací pes', icon: Radar },
+  { tab: 'doporucene', label: 'Doporučené flipy', icon: Sparkles },
   { tab: 'materialy', label: 'Materiály', icon: GraduationCap },
 ];
 
@@ -143,7 +146,7 @@ function Overview({ user, planName, backToSite, setTab }) {
           <div>
             <div className="text-xs uppercase tracking-wide text-zinc-400">Členství</div>
             <div className="mt-0.5 font-display text-xl font-bold text-white">Zatím nemáš aktivní členství</div>
-            <div className="mt-1 text-sm text-zinc-400">Odemkni materiály, hlídacího psa i komunitu.</div>
+            <div className="mt-1 text-sm text-zinc-400">Odemkni materiály, doporučené flipy i komunitu.</div>
           </div>
           <button onClick={() => { backToSite(); setTimeout(() => document.getElementById('cenik')?.scrollIntoView({ behavior: 'smooth' }), 100); }} className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 shadow-glow transition hover:brightness-110">
             Aktivovat členství
@@ -202,15 +205,15 @@ function Overview({ user, planName, backToSite, setTab }) {
         </div>
       )}
 
-      {/* Hlídací pes náhled + materiály */}
+      {/* Doporučené flipy náhled + materiály */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-ink-850 p-5">
           <div className="flex items-center justify-between">
-            <h3 className="inline-flex items-center gap-2 font-display font-bold text-white"><Radar className="h-4 w-4 text-accent" /> Hlídací pes</h3>
-            <button onClick={() => setTab('hlidac')} className="inline-flex items-center text-sm font-medium text-accent hover:gap-1">Vše <ChevronRight className="h-4 w-4" /></button>
+            <h3 className="inline-flex items-center gap-2 font-display font-bold text-white"><Sparkles className="h-4 w-4 text-accent" /> Doporučené flipy</h3>
+            <button onClick={() => setTab('doporucene')} className="inline-flex items-center text-sm font-medium text-accent hover:gap-1">Vše <ChevronRight className="h-4 w-4" /></button>
           </div>
           <div className="mt-4 space-y-2.5">
-            {WATCH_ALERTS.slice(0, 2).map((a) => <AlertRow key={a.car} a={a} compact />)}
+            <RecommendedFlipsPreview />
           </div>
         </div>
 
@@ -237,35 +240,303 @@ function Overview({ user, planName, backToSite, setTab }) {
   );
 }
 
-/* ---------- Hlídací pes ---------- */
-function Watchdog() {
+/* ---------- Doporučené flipy (živá data z algdash API — PODHODNOCENÉ) ---------- */
+const DEFAULT_FLIP_FILTERS = {
+  manufacturer: '', model: '', min_gap_pct: '', min_sample_size: 5,
+  min_price: '', max_price: '', min_km: '', max_km: '', min_year: '', max_year: '',
+  include_damaged: false, reference: 'median', sort: 'gap_czk', order: 'desc',
+};
+
+const flipInputClass =
+  'w-full rounded-xl border border-white/10 bg-ink-950 px-3.5 py-2.5 text-sm text-white outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20 disabled:opacity-40';
+
+function FlipField({ label, hint, children }) {
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="inline-flex items-center gap-2 font-display text-2xl font-bold text-white"><Radar className="h-5 w-5 text-accent" /> Hlídací pes</h1>
-        <p className="mt-1 text-sm text-zinc-400">Auta pod tržní cenou dle tvých parametrů. Algoritmus skenuje celou Evropu 24/7.</p>
-      </div>
-      <div className="space-y-3">
-        {WATCH_ALERTS.map((a) => <AlertRow key={a.car} a={a} />)}
-      </div>
-    </div>
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-medium text-zinc-400">{label}</span>
+      {children}
+      {hint && <span className="mt-1 block text-[11px] text-zinc-500">{hint}</span>}
+    </label>
   );
 }
 
-function AlertRow({ a, compact }) {
-  const diff = Math.round((1 - a.price / a.market) * 100);
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-ink-950 p-3">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent"><Bell className="h-4 w-4" /></span>
+const SORT_COLUMNS = [
+  { key: 'year', label: 'Rok' },
+  { key: 'mileage_km', label: 'Nájezd' },
+  { key: 'price_czk', label: 'Cena' },
+  { key: 'gap_pct', label: 'Rozdíl' },
+];
+
+/** Náhled na Přehledu — 2 nejlepší nálezy dle výchozích filtrů. */
+function RecommendedFlipsPreview() {
+  const { data, isLoading, isError } = useUndervalued({ page: 1, page_size: 2, sort: 'gap_czk', order: 'desc', min_sample_size: 5 });
+  const items = data?.items || [];
+
+  if (isLoading && !data) return <p className="text-sm text-zinc-500">Načítám…</p>;
+  if (isError) return <p className="text-sm text-zinc-500">Nálezy se teď nepodařilo načíst.</p>;
+  if (items.length === 0) return <p className="text-sm text-zinc-500">Zatím žádné nálezy.</p>;
+
+  return items.map((item) => (
+    <div key={item.external_id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-ink-950 p-3">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent"><Sparkles className="h-4 w-4" /></span>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-white">{a.car}</div>
-        <div className="truncate text-xs text-zinc-500">{compact ? a.loc : `${a.spec} · ${a.loc} · ${a.time}`}</div>
+        <div className="truncate text-sm font-semibold text-white">{item.manufacturer} {item.model}</div>
+        <div className="truncate text-xs text-zinc-500">{item.year ?? '—'} · {kmFmt(item.mileage_km)}</div>
       </div>
       <div className="text-right">
-        <div className="text-sm font-bold text-white">{czk(a.price)}</div>
-        <div className="text-xs font-semibold text-accent">−{diff} % pod trhem</div>
+        <div className="text-sm font-bold text-white">{czk(item.price_czk)}</div>
+        {item.gap_pct != null && <div className="text-xs font-semibold text-accent">−{Math.round(item.gap_pct * 100)} % pod trhem</div>}
       </div>
-      {!compact && <button className="ml-2 hidden shrink-0 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-ink-950 transition hover:brightness-110 sm:inline-flex">Inzerát</button>}
+    </div>
+  ));
+}
+
+function RecommendedFlips() {
+  // `filters` je rozpracovaný draft ve formuláři, `applied` je to, na co se
+  // skutečně dotazujeme API. Sladí se jen po „Hledat" (nebo resetu) — API
+  // přepočítává celou množinu server-side, takže dotaz na každý stisk klávesy
+  // by tabulku zpomalil (stejný důvod jako v algdash).
+  const [filters, setFilters] = useState(DEFAULT_FLIP_FILTERS);
+  const [applied, setApplied] = useState(DEFAULT_FLIP_FILTERS);
+  const [page, setPage] = useState(1);
+  const [openingId, setOpeningId] = useState(null);
+
+  const updateFilter = (key, val) => setFilters((f) => ({ ...f, [key]: val, ...(key === 'manufacturer' ? { model: '' } : {}) }));
+  const resetFilters = () => { setFilters(DEFAULT_FLIP_FILTERS); setApplied(DEFAULT_FLIP_FILTERS); setPage(1); };
+  const applyFilters = () => { setApplied(filters); setPage(1); };
+  const dirty = useMemo(() => JSON.stringify(filters) !== JSON.stringify(applied), [filters, applied]);
+
+  const manufacturersQuery = useMobiledeManufacturers();
+  const modelsQuery = useMobiledeModels(filters.manufacturer || undefined);
+
+  const listParams = useMemo(() => {
+    const { min_gap_pct, ...rest } = applied;
+    return { ...rest, min_gap_pct: min_gap_pct === '' ? undefined : Number(min_gap_pct) / 100, page, page_size: 20 };
+  }, [applied, page]);
+
+  const { data, isLoading, isError } = useUndervalued(listParams);
+  const items = data?.items || [];
+  const total = data?.total ?? 0;
+  const pageSize = data?.page_size ?? listParams.page_size;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  // Hook drží předchozí data při refetchi -> isLoading + existující data = refetch na pozadí, ne první načtení.
+  const refetching = isLoading && Boolean(data);
+
+  const handleSort = (key) => {
+    const order = filters.sort === key ? (filters.order === 'asc' ? 'desc' : 'asc') : 'desc';
+    const next = { ...filters, sort: key, order };
+    setFilters(next);
+    setApplied(next);
+    setPage(1);
+  };
+
+  const openListing = async (externalId) => {
+    setOpeningId(externalId);
+    try {
+      const detail = await dealsApi.undervaluedDetail(externalId);
+      if (detail?.source_url) window.open(detail.source_url, '_blank', 'noopener,noreferrer');
+    } catch {
+      // tiché selhání — inzerát se prostě neotevře
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="inline-flex items-center gap-2 font-display text-2xl font-bold text-white"><Sparkles className="h-5 w-5 text-accent" /> Doporučené flipy</h1>
+        <p className="mt-1 text-sm text-zinc-400">Živá auta pod tržní cenou z algoritmu algdash (PODHODNOCENÉ). Uprav filtry a klikni na Hledat.</p>
+      </div>
+
+      {/* Filtry */}
+      <form
+        onSubmit={(e) => { e.preventDefault(); applyFilters(); }}
+        className="rounded-2xl border border-white/10 bg-ink-850 p-5"
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="inline-flex items-center gap-2 font-display font-bold text-white"><SlidersHorizontal className="h-4 w-4 text-accent" /> Filtry</h3>
+          <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 transition hover:text-white">
+            <RotateCcw className="h-3.5 w-3.5" /> Vymazat
+          </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <FlipField label="Značka (mobile.de)">
+            <select value={filters.manufacturer} onChange={(e) => updateFilter('manufacturer', e.target.value)} className={flipInputClass}>
+              <option value="">Jakákoliv</option>
+              {(manufacturersQuery.data || []).map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </FlipField>
+          <FlipField label="Model (mobile.de)">
+            <select value={filters.model} onChange={(e) => updateFilter('model', e.target.value)} className={flipInputClass}>
+              <option value="">Jakýkoliv</option>
+              {(modelsQuery.data || []).map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </FlipField>
+          <FlipField label="Min. rozdíl (%)">
+            <input type="number" inputMode="numeric" min="0" max="100" value={filters.min_gap_pct} onChange={(e) => updateFilter('min_gap_pct', e.target.value)} className={flipInputClass} placeholder="0" />
+          </FlipField>
+          <FlipField label="Min. počet vzorků" hint="kolik českých inzerátů tvoří srovnávací vzorek">
+            <input type="number" inputMode="numeric" min="1" value={filters.min_sample_size} onChange={(e) => updateFilter('min_sample_size', e.target.value)} className={flipInputClass} placeholder="5" />
+          </FlipField>
+
+          <FlipField label="Cena od (Kč)">
+            <input type="number" inputMode="numeric" min="0" value={filters.min_price} onChange={(e) => updateFilter('min_price', e.target.value)} className={flipInputClass} placeholder="0" />
+          </FlipField>
+          <FlipField label="Cena do (Kč)">
+            <input type="number" inputMode="numeric" min="0" value={filters.max_price} onChange={(e) => updateFilter('max_price', e.target.value)} className={flipInputClass} placeholder="bez omezení" />
+          </FlipField>
+          <FlipField label="Nájezd od (km)">
+            <input type="number" inputMode="numeric" min="0" value={filters.min_km} onChange={(e) => updateFilter('min_km', e.target.value)} className={flipInputClass} placeholder="0" />
+          </FlipField>
+          <FlipField label="Nájezd do (km)">
+            <input type="number" inputMode="numeric" min="0" value={filters.max_km} onChange={(e) => updateFilter('max_km', e.target.value)} className={flipInputClass} placeholder="bez omezení" />
+          </FlipField>
+
+          <FlipField label="Rok od">
+            <input type="number" inputMode="numeric" min="0" value={filters.min_year} onChange={(e) => updateFilter('min_year', e.target.value)} className={flipInputClass} placeholder="např. 2015" />
+          </FlipField>
+          <FlipField label="Rok do">
+            <input type="number" inputMode="numeric" min="0" value={filters.max_year} onChange={(e) => updateFilter('max_year', e.target.value)} className={flipInputClass} placeholder="bez omezení" />
+          </FlipField>
+          <FlipField label="Řazení">
+            <select value={filters.sort} onChange={(e) => updateFilter('sort', e.target.value)} className={flipInputClass}>
+              <option value="gap_czk">Rozdíl v Kč</option>
+              <option value="gap_pct">Rozdíl v %</option>
+              <option value="price_czk">Cena</option>
+            </select>
+          </FlipField>
+          <FlipField label="Pořadí">
+            <select value={filters.order} onChange={(e) => updateFilter('order', e.target.value)} className={flipInputClass}>
+              <option value="desc">Sestupně</option>
+              <option value="asc">Vzestupně</option>
+            </select>
+          </FlipField>
+
+          <FlipField label="Referenční cena">
+            <select value={filters.reference} onChange={(e) => updateFilter('reference', e.target.value)} className={flipInputClass}>
+              <option value="median">Medián sauto.cz</option>
+              <option value="p25">Spodní kvartil (p25) sauto.cz</option>
+            </select>
+          </FlipField>
+          <label className="flex items-center gap-2 self-end pb-2.5 text-sm text-zinc-300">
+            <input type="checkbox" checked={filters.include_damaged} onChange={(e) => updateFilter('include_damaged', e.target.checked)} className="h-4 w-4 rounded border-white/20 bg-ink-950 text-accent focus:ring-accent/40" />
+            zobrazit i havarované
+          </label>
+        </div>
+
+        <div className="mt-5 flex items-center justify-end gap-3">
+          {dirty && <span className="text-xs text-amber-400/90">Neuložené změny filtrů</span>}
+          <button
+            type="submit"
+            disabled={!dirty}
+            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Search className="h-4 w-4" /> Hledat
+          </button>
+        </div>
+      </form>
+
+      {/* Tabulka výsledků */}
+      <div className="rounded-2xl border border-white/10 bg-ink-850 p-5">
+        <div className="flex items-center justify-between">
+          <h3 className="inline-flex items-center gap-2 font-display font-bold text-white">
+            <Table2 className="h-4 w-4 text-accent" /> Nálezy
+            {refetching && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/15 border-t-accent" />}
+          </h3>
+          <span className="text-xs text-zinc-500">{total.toLocaleString('cs-CZ')} celkem</span>
+        </div>
+
+        {isLoading && !data && (
+          <div className="mt-4 flex items-center gap-2 text-sm text-zinc-400"><Loader2 className="h-4 w-4 animate-spin" /> Načítám…</div>
+        )}
+        {isError && (
+          <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">Nálezy se nepodařilo načíst. Zkus to prosím znovu.</p>
+        )}
+        {!isError && data && items.length === 0 && (
+          <p className="mt-4 rounded-xl border border-white/10 bg-ink-950 p-6 text-center text-sm text-zinc-400">Žádná auta neodpovídají zvoleným filtrům.</p>
+        )}
+
+        {!isError && items.length > 0 && (
+          <div className={`relative transition-opacity ${refetching ? 'pointer-events-none opacity-50' : ''}`}>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[820px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-left text-xs uppercase tracking-wide text-zinc-500">
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">Vůz</th>
+                    {SORT_COLUMNS.map((col) => (
+                      <th key={col.key} className="whitespace-nowrap px-3 py-2 font-medium">
+                        <button type="button" onClick={() => handleSort(col.key)} className="inline-flex items-center gap-1 transition hover:text-white">
+                          {col.label}
+                          {filters.sort === col.key ? (filters.order === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                        </button>
+                      </th>
+                    ))}
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">Palivo</th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">Výkon</th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">Vzorek</th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.external_id} className="border-b border-white/5 transition hover:bg-white/5">
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        <div className="font-medium text-white">{item.manufacturer} {item.model}</div>
+                        {item.damaged === true && <div className="text-xs text-red-400">havarovaný</div>}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">{item.year ?? '—'}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300"><span className="inline-flex items-center gap-1"><Gauge className="h-3 w-3" /> {kmFmt(item.mileage_km)}</span></td>
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        <div className="font-semibold text-white">{czk(item.price_czk)}</div>
+                        <div className="text-xs font-semibold text-accent">
+                          {item.gap_czk != null ? czk(item.gap_czk) : '—'}{item.gap_pct != null ? ` · −${Math.round(item.gap_pct * 100)} %` : ''}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">{item.fuel_type || '—'}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-zinc-400">{item.power_kw != null ? `${item.power_kw} kW` : '—'}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-zinc-400" title="Počet srovnatelných inzerátů na sauto.cz použitých pro výpočet referenční ceny">n = {item.sample_size ?? '—'}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => openListing(item.external_id)}
+                          disabled={openingId === item.external_id}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-ink-950 transition hover:brightness-110 disabled:opacity-50"
+                        >
+                          {openingId === item.external_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />} Inzerát
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-xs text-zinc-500">Stránka {page} z {totalPages}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1 || refetching}
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:text-white disabled:opacity-30"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Předchozí
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || refetching}
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:text-white disabled:opacity-30"
+                >
+                  Další <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -353,7 +624,7 @@ function SettingsPanel({ user, planName, signOut }) {
     <div className="space-y-5">
       <div>
         <h1 className="inline-flex items-center gap-2 font-display text-2xl font-bold text-white"><Settings className="h-5 w-5 text-accent" /> Nastavení</h1>
-        <p className="mt-1 text-sm text-zinc-400">Profil, parametry hlídače a členství.</p>
+        <p className="mt-1 text-sm text-zinc-400">Profil, výchozí filtry doporučených flipů a členství.</p>
       </div>
 
       {/* Profil */}
@@ -366,16 +637,16 @@ function SettingsPanel({ user, planName, signOut }) {
         <button className="mt-4 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:brightness-110">Uložit změny</button>
       </div>
 
-      {/* Parametry hlídače */}
+      {/* Výchozí filtry doporučených flipů */}
       <div className="rounded-2xl border border-white/10 bg-ink-850 p-5">
-        <h3 className="font-display font-bold text-white">Parametry hlídacího psa</h3>
+        <h3 className="font-display font-bold text-white">Výchozí filtry doporučených flipů</h3>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <LabeledInput label="Značky" defaultValue="BMW, Audi, VW" />
           <LabeledInput label="Max. cena" defaultValue="800 000 Kč" />
           <LabeledInput label="Min. % pod trhem" defaultValue="10 %" />
           <LabeledInput label="Lokality" defaultValue="DE, AT, CZ" />
         </div>
-        <button className="mt-4 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">Aktualizovat hlídač</button>
+        <button className="mt-4 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">Uložit výchozí filtry</button>
       </div>
 
       {/* Členství */}

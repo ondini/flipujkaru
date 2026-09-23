@@ -132,12 +132,26 @@ export function AppProvider({ children }) {
   };
 
   const signOut = async () => {
-    await supabase?.auth.signOut();
+    // Vyčisti stav hned — ať tlačítko vždy reaguje, i kdyby volání Supabase
+    // selhalo nebo se zaseklo (známý deadlock na auth zámku v prohlížeči).
     setUser(null);
     setMember(null);
     setIsAdmin(false);
     setView('site');
     window.scrollTo(0, 0);
+    try {
+      // scope: 'local' = odhlásí jen tento prohlížeč a nečeká na síťové ověření,
+      // takže odhlášení projde i s expirovaným tokenem / bez připojení.
+      await supabase?.auth.signOut({ scope: 'local' });
+    } catch {
+      // Ignorujeme (např. chybějící/expirovaná session) — stav už je vyčištěný.
+    }
+    // Pojistka: odstraň uložený token, ať se po reloadu nikdo nepřihlásí zpět.
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch { /* localStorage nemusí být dostupné (privátní režim) */ }
   };
 
   // ---- Přihlašovací okno ----
