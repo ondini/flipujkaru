@@ -16,14 +16,16 @@ export function AppProvider({ children }) {
   const [pendingPlan, setPendingPlan] = useState(null); // plán, který chtěl koupit před přihlášením
   const [pendingStripeSession, setPendingStripeSession] = useState(null); // { sessionId, email } — zaplaceno, čeká se na vytvoření účtu
 
-  // Načte členství uživatele z databáze (profiles)
-  const loadMembership = async (u) => {
+  // Načte členství uživatele z databáze (profiles). Jeden retry po krátké
+  // prodlevě při chybě (přechodná síťová/RLS timing chyba), než se vzdá.
+  const loadMembership = async (u, retry = true) => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('plan, subscription_status, current_period_end, role')
         .eq('id', u.id)
         .single();
+      if (error) throw error;
       setIsAdmin(data?.role === 'admin');
       if (data?.plan && data.subscription_status === 'active') {
         const plan = PLANS.find((p) => p.name === data.plan);
@@ -32,6 +34,10 @@ export function AppProvider({ children }) {
         setMember(null);
       }
     } catch {
+      if (retry) {
+        await new Promise((r) => setTimeout(r, 800));
+        return loadMembership(u, false);
+      }
       setMember(null);
       setIsAdmin(false);
     }
@@ -45,7 +51,10 @@ export function AppProvider({ children }) {
   };
   useEffect(() => { reloadContent(); }, []);
 
-  // Sledování přihlášení + načtení členství
+  // Sledování přihlášení + načtení členství. Spoléháme jen na
+  // onAuthStateChange — supabase-js v2 při odběru sám vystřelí počáteční
+  // INITIAL_SESSION event, takže samostatné getSession() by běželo souběžně
+  // a spouštělo dva paralelní loadMembership() běhy bez pořadí/cancelace.
   useEffect(() => {
     if (!SUPABASE_READY) return;
     const apply = async (session) => {
@@ -54,7 +63,6 @@ export function AppProvider({ children }) {
       if (u) await loadMembership(u);
       else { setMember(null); setIsAdmin(false); }
     };
-    supabase.auth.getSession().then(({ data }) => apply(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => apply(session));
     return () => sub.subscription.unsubscribe();
   }, []);
