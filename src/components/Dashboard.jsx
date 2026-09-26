@@ -17,10 +17,11 @@ import { LogoMark } from './Logo.jsx';
 const AdminCars = lazy(() => import('./AdminCars.jsx'));
 const TextsAdmin = lazy(() => import('./TextsAdmin.jsx'));
 const MyFlips = lazy(() => import('./dashboard/MyFlips.jsx'));
+const Leaderboard = lazy(() => import('./dashboard/Leaderboard.jsx'));
 const CalcPanel = lazy(() => import('./dashboard/CalcPanel.jsx'));
 const Community = lazy(() => import('./dashboard/Community.jsx'));
 
-const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, Users, TrendingUp, Sparkles };
+const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, Users, TrendingUp, Sparkles, Trophy };
 const STAT_ICONS = { PiggyBank, Car, Trophy };
 
 export default function Dashboard() {
@@ -78,6 +79,7 @@ export default function Dashboard() {
           <Suspense fallback={<div className="flex items-center gap-2 text-sm text-zinc-400"><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-accent" /> Načítám…</div>}>
             {tab === 'prehled' && <Overview user={user} planName={planName} backToSite={backToSite} setTab={setTab} />}
             {tab === 'flipy' && <MyFlips />}
+            {tab === 'zebricky' && <Leaderboard />}
             {tab === 'kalkulacka' && <CalcPanel />}
             {tab === 'doporucene' && <RecommendedFlips />}
             {tab === 'materialy' && <Materials />}
@@ -488,11 +490,9 @@ function RecommendedFlips() {
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">{item.year ?? '—'}</td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300"><span className="inline-flex items-center gap-1"><Gauge className="h-3 w-3" /> {kmFmt(item.mileage_km)}</span></td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <div className="font-semibold text-white">{czk(item.price_czk)}</div>
-                        <div className="text-xs font-semibold text-accent">
-                          {item.gap_czk != null ? czk(item.gap_czk) : '—'}{item.gap_pct != null ? ` · −${Math.round(item.gap_pct * 100)} %` : ''}
-                        </div>
+                      <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-white">{czk(item.price_czk)}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-xs font-semibold text-accent">
+                        {item.gap_czk != null ? czk(item.gap_czk) : '—'}{item.gap_pct != null ? ` · −${Math.round(item.gap_pct * 100)} %` : ''}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">{item.fuel_type || '—'}</td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-400">{item.power_kw != null ? `${item.power_kw} kW` : '—'}</td>

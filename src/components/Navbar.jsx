@@ -49,8 +49,9 @@ export default function Navbar() {
             const isActive = active === l.href;
             return (
               <a
-                key={l.href}
+                key={l.label}
                 href={l.href}
+                onClick={() => { if (l.view) window.dispatchEvent(new CustomEvent('marketplace:setview', { detail: l.view })); }}
                 className={`relative py-1 transition ${isActive ? 'text-white' : 'text-zinc-400 hover:text-white'}`}
               >
                 {l.label}
@@ -103,9 +104,9 @@ export default function Navbar() {
         <div className="md:hidden border-t border-white/5 bg-ink-900/95 backdrop-blur px-6 py-4 space-y-2 text-sm font-medium">
           {NAV_LINKS.map((l) => (
             <a
-              key={l.href}
+              key={l.label}
               href={l.href}
-              onClick={() => setOpen(false)}
+              onClick={() => { setOpen(false); if (l.view) window.dispatchEvent(new CustomEvent('marketplace:setview', { detail: l.view })); }}
               className={`block py-2 transition ${active === l.href ? 'text-accent' : 'text-zinc-300 hover:text-accent'}`}
             >
               {l.label}

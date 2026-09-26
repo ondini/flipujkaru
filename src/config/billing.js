@@ -4,8 +4,9 @@
    STRIPE_SECRET_KEY, který žije pouze na serveru (api/).
 ============================================================ */
 export const PRICE_IDS = {
-  // TODO: nahraď skutečným Price ID ročního členství 14 999 Kč ze Stripe dashboardu.
-  AKADEMIE: 'price_REPLACE_WITH_YOUR_ANNUAL_PRICE_ID',
+  // TEST mode Price ID (roční členství 14 999 Kč). Před ostrým provozem
+  // nahraď reálným Price ID z produkčního (live) Stripe dashboardu.
+  AKADEMIE: 'price_1UJfhBCgyVBKBvSarn5NZOZp',
 };
 
 /** Vrátí Stripe Price ID pro daný plán. */
