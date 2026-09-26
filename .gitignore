@@ -9,6 +9,7 @@ dist-ssr
 .vercel
 .wrangler
 .dev.vars
+supabase/.temp/
 .claude/settings.local.json
 
 # Raw working material — source photos/docs curated into public/flips, not needed for deploy

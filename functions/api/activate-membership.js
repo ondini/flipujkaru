@@ -28,7 +28,11 @@ export async function onRequestPost({ request, env }) {
     if (!paid) return json({ error: 'Platba neproběhla.' }, 400);
 
     const sub = session.subscription;
-    const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
+    // Konec zaplaceného období: ve starších verzích Stripe API je na subscription
+    // přímo, v novějších ("basil", které Stripe SDK v22 používá) se přesunul na
+    // položku předplatného (items.data[].current_period_end). Zkusíme obojí.
+    const periodEndUnix = sub?.current_period_end ?? sub?.items?.data?.[0]?.current_period_end ?? null;
+    const periodEnd = periodEndUnix ? new Date(periodEndUnix * 1000).toISOString() : null;
 
     // Zapiš členství k uživateli (service role obejde RLS)
     const { error: upErr } = await admin

@@ -54,17 +54,33 @@ export default function Marketplace() {
   const { siteText: t } = useApp();
 
   // Načtení aut z databáze (kromě konceptů). Když DB není/prázdná, zůstanou statická.
+  // Jeden retry po krátké prodlevě při chybě — bez něj by tiché selhání nechalo
+  // rows=null navždy a „Úspěšné flipy" by spadly zpět na statický demo seznam.
   useEffect(() => {
     if (!supabase) return;
-    supabase
-      .from('cars')
-      .select('*')
-      .neq('status', 'draft')
-      .order('sort', { ascending: true })
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (!error && data) setRows(data);
-      });
+    let cancelled = false;
+    const fetchCars = (retry = true) => {
+      supabase
+        .from('cars')
+        .select('*')
+        .neq('status', 'draft')
+        .order('sort', { ascending: true })
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (cancelled) return;
+          if (!error && data) setRows(data);
+          else if (retry) setTimeout(() => fetchCars(false), 800);
+        });
+    };
+    fetchCars();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Navbar odkaz „Naše Flipy" přepne záložku bez zdvihání stavu do AppContext.
+  useEffect(() => {
+    const onSetView = (e) => setView(e.detail);
+    window.addEventListener('marketplace:setview', onSetView);
+    return () => window.removeEventListener('marketplace:setview', onSetView);
   }, []);
 
   // Auta na prodej = vše kromě prodaných; prodaná se přesouvají do „Úspěšné flipy".

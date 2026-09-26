@@ -635,6 +635,7 @@ export const PAYMENTS = ['Visa', 'Mastercard', 'Apple Pay', 'Google Pay', 'Banko
 export const NAV_LINKS = [
   { href: '#proc-my', label: 'Proč my' },
   { href: '#marketplace', label: 'Bazar' },
+  { href: '#marketplace', label: 'Naše Flipy', view: 'flips' },
   { href: '#kalkulacka', label: 'Kalkulačka' },
   { href: '#edukace', label: 'Akademie' },
   { href: '#cenik', label: 'Členství' },
