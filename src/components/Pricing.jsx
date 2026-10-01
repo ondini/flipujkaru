@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Lock, Undo2, XCircle } from 'lucide-react';
 import { PLANS, czk } from '../data/content.js';
+import { BILLING_OPTIONS, DEFAULT_BILLING, perMonth } from '../config/billing.js';
 import { useApp } from '../AppContext.jsx';
 import Reveal from './Reveal.jsx';
+
+// Sazba za měsíc u nejdražší (měsíční) varianty — základ pro výpočet úspory
+const MONTHLY_RATE = perMonth(BILLING_OPTIONS.find((o) => o.id === 'monthly') || BILLING_OPTIONS[0]);
+const savePct = (o) => Math.max(0, Math.round((1 - perMonth(o) / MONTHLY_RATE) * 100));
 
 // Garanční odznaky pod ceníkem — snižují vnímané riziko nákupu
 const TRUST = [
@@ -35,9 +40,10 @@ function FeatureCheck({ label, index, strong }) {
   );
 }
 
-/** Jediná cenová karta — jedno členství, jedna cena, ročně. */
+/** Cenová karta — jedno členství, tři varianty podle frekvence platby. */
 function PlanCard({ plan }) {
   const { startCheckout } = useApp();
+  const [billing, setBilling] = useState(DEFAULT_BILLING);
 
   return (
     <div className="grad-border relative mx-auto w-full max-w-md rounded-3xl p-8 shadow-glow">
@@ -48,10 +54,36 @@ function PlanCard({ plan }) {
       <h4 className="font-display text-sm font-bold tracking-[0.2em] text-accent">{plan.name}</h4>
       <p className="mt-1 text-sm text-zinc-500">{plan.tagline}</p>
 
-      <div className="mt-5 flex items-end gap-1">
-        <span className="font-display text-4xl font-bold text-white">{czk(plan.price)}</span>
-        <span className="mb-1 text-sm text-zinc-500">/ {plan.period}</span>
+      {/* Přepínač frekvence platby */}
+      <div className="mt-5 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-ink-850 p-1.5">
+        {BILLING_OPTIONS.map((o) => {
+          const active = o.id === billing.id;
+          return (
+            <button
+              key={o.id}
+              onClick={() => setBilling(o)}
+              className={`relative rounded-xl px-2 py-2 text-center text-sm font-semibold transition ${
+                active ? 'bg-accent text-ink-950 shadow-glow' : 'text-zinc-300 hover:text-white'
+              }`}
+            >
+              {o.label}
+              {savePct(o) > 0 && (
+                <span className={`mt-0.5 block text-[10px] font-bold ${active ? 'text-ink-950/70' : 'text-accent'}`}>
+                  −{savePct(o)} %
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      <div className="mt-5 flex items-end gap-1">
+        <span className="font-display text-4xl font-bold text-white">{czk(billing.price)}</span>
+        <span className="mb-1 text-sm text-zinc-500">/ {billing.period}</span>
+      </div>
+      <p className="mt-1 text-xs text-zinc-500">
+        {billing.months > 1 ? `${czk(perMonth(billing))} / měsíc · ${billing.note}` : billing.note}
+      </p>
 
       <ul className="mt-6 space-y-3">
         {plan.features.map((f, i) => (
@@ -60,7 +92,7 @@ function PlanCard({ plan }) {
       </ul>
 
       <button
-        onClick={() => startCheckout(plan)}
+        onClick={() => startCheckout(plan, billing)}
         className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3.5 font-semibold text-ink-950 transition hover:brightness-110"
       >
         {plan.cta}
