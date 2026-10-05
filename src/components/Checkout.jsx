@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, CreditCard, Landmark, ShieldCheck, Lock, Check, Loader2, Apple, AlertCircle } from 'lucide-react';
 import { useApp } from '../AppContext.jsx';
 import { czk } from '../data/content.js';
-import { priceIdFor, STRIPE_READY } from '../config/billing.js';
+import { STRIPE_READY, DEFAULT_BILLING } from '../config/billing.js';
 
 const STEPS = ['Souhrn', 'Platba', 'Hotovo'];
 
@@ -32,9 +32,9 @@ export default function Checkout() {
   }, [checkout]);
 
   if (!checkout) return null;
-  const { plan } = checkout;
-  const total = plan.price;
-  const period = plan.period || 'rok';
+  const { plan, billing = DEFAULT_BILLING } = checkout;
+  const total = billing.price;
+  const period = billing.period;
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const cardValid = method !== 'card' || (form.email.includes('@') && form.card.replace(/\s/g, '').length === 16 && form.exp.length === 5 && form.cvc.length >= 3);
@@ -52,11 +52,11 @@ export default function Checkout() {
     setError('');
     try {
       // Uložíme volbu, ať po návratu ze Stripe víme, co aktivovat
-      localStorage.setItem('fk_pending', JSON.stringify({ planName: plan.name, email: form.email }));
+      localStorage.setItem('fk_pending', JSON.stringify({ planName: plan.name, billing: billing.id, email: form.email }));
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: priceIdFor(plan.name), email: form.email || undefined, planName: plan.name, userId: user?.id }),
+        body: JSON.stringify({ priceId: billing.priceId, email: form.email || undefined, planName: plan.name, billing: billing.id, userId: user?.id }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || 'Nepodařilo se vytvořit platbu.');
@@ -110,7 +110,7 @@ export default function Checkout() {
                     <div className="font-display text-lg font-bold text-white">Plán {plan.name}</div>
                     <div className="text-sm text-zinc-400">{plan.tagline}</div>
                   </div>
-                  <span className="rounded-lg bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent">Roční</span>
+                  <span className="rounded-lg bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent">{billing.label}</span>
                 </div>
                 <ul className="mt-4 space-y-2 border-t border-white/5 pt-4 text-sm">
                   {plan.features.slice(0, 4).map((f) => (
@@ -126,7 +126,7 @@ export default function Checkout() {
                 <div className="flex justify-between border-t border-white/5 pt-2 font-display text-lg font-bold text-white">
                   <span>Celkem</span><span>{czk(total)}</span>
                 </div>
-                <p className="text-xs text-zinc-500">Vč. DPH. Účtováno ročně, zrušíš kdykoli.</p>
+                <p className="text-xs text-zinc-500">Vč. DPH. {billing.note}, zrušíš kdykoli.</p>
               </div>
 
               {/* E-mail (předvyplní se na Stripe) */}

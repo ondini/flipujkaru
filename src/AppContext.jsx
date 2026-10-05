@@ -1,13 +1,14 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, SUPABASE_READY } from './lib/supabase.js';
 import { PLANS } from './data/content.js';
+import { DEFAULT_BILLING } from './config/billing.js';
 
 /* Sdílený stav aplikace: účty (Supabase), přepínání web ↔ administrace, checkout. */
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [view, setView] = useState('site'); // 'site' | 'dashboard'
-  const [checkout, setCheckout] = useState(null); // { plan } | null
+  const [checkout, setCheckout] = useState(null); // { plan, billing } | null
   const [member, setMember] = useState(null); // členství (Fáze C napojí na Stripe)
   const [user, setUser] = useState(null); // přihlášený uživatel (Supabase)
   const [isAdmin, setIsAdmin] = useState(false); // má účet roli admin?
@@ -104,6 +105,20 @@ export function AppProvider({ children }) {
       const data = await res.json();
       if (!data.paid) return;
       const { data: { session } } = SUPABASE_READY ? await supabase.auth.getSession() : { data: { session: null } };
+      const paidEmail = (data.email || '').trim().toLowerCase();
+      const accountEmail = (session?.user?.email || '').trim().toLowerCase();
+
+      // Zaplaceno pod jiným e-mailem, než je právě přihlášený účet → členství
+      // patří plátci, ne tomu, kdo je zrovna přihlášený. Odhlásíme a necháme
+      // dokončit přes účet odpovídající platbě (přihlášení/registrace plátce).
+      if (session && paidEmail && accountEmail && paidEmail !== accountEmail) {
+        setUser(null); setMember(null); setIsAdmin(false);
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* bez session nevadí */ }
+        setPendingStripeSession({ sessionId, email: data.email || '' });
+        setAuthOpen(true);
+        return;
+      }
+
       if (session) {
         await activateAfterCheckout(sessionId);
       } else {
@@ -182,7 +197,7 @@ export function AppProvider({ children }) {
 
   // ---- Checkout ----
   // Nejdřív platba, účet vzniká až po ní — žádná přihlašovací brána před pokladnou.
-  const startCheckout = (plan) => setCheckout({ plan });
+  const startCheckout = (plan, billing = DEFAULT_BILLING) => setCheckout({ plan, billing });
   const closeCheckout = () => setCheckout(null);
 
   const completePurchase = ({ email, plan }) => {

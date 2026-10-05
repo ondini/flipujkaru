@@ -8,7 +8,7 @@ dist-ssr
 .env*.local
 .vercel
 .wrangler
-.dev.vars
+.dev.vars*
 supabase/.temp/
 .claude/settings.local.json
 
