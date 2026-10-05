@@ -105,6 +105,20 @@ export function AppProvider({ children }) {
       const data = await res.json();
       if (!data.paid) return;
       const { data: { session } } = SUPABASE_READY ? await supabase.auth.getSession() : { data: { session: null } };
+      const paidEmail = (data.email || '').trim().toLowerCase();
+      const accountEmail = (session?.user?.email || '').trim().toLowerCase();
+
+      // Zaplaceno pod jiným e-mailem, než je právě přihlášený účet → členství
+      // patří plátci, ne tomu, kdo je zrovna přihlášený. Odhlásíme a necháme
+      // dokončit přes účet odpovídající platbě (přihlášení/registrace plátce).
+      if (session && paidEmail && accountEmail && paidEmail !== accountEmail) {
+        setUser(null); setMember(null); setIsAdmin(false);
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* bez session nevadí */ }
+        setPendingStripeSession({ sessionId, email: data.email || '' });
+        setAuthOpen(true);
+        return;
+      }
+
       if (session) {
         await activateAfterCheckout(sessionId);
       } else {

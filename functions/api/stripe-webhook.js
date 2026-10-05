@@ -22,6 +22,11 @@ function periodEndISO(sub) {
   return unix ? new Date(unix * 1000).toISOString() : null;
 }
 
+/** Chyba zápisu do DB → vyhoď ji, ať vrátíme 500 a Stripe událost zopakuje. */
+function must({ error }) {
+  if (error) throw error;
+}
+
 export async function onRequestPost({ request, env }) {
   const stripe = new Stripe(env.STRIPE_SECRET_KEY);
   const sig = request.headers.get('stripe-signature');
@@ -61,7 +66,7 @@ export async function onRequestPost({ request, env }) {
         if (session.subscription) {
           sub = await stripe.subscriptions.retrieve(session.subscription);
         }
-        await admin
+        must(await admin
           .from('profiles')
           .update({
             plan: session.metadata?.planName || null,
@@ -70,42 +75,44 @@ export async function onRequestPost({ request, env }) {
             stripe_subscription_id: sub?.id || (typeof session.subscription === 'string' ? session.subscription : null),
             current_period_end: periodEndISO(sub),
           })
-          .eq('id', userId);
+          .eq('id', userId));
         break;
       }
 
       // Obnovení / změna předplatného — dorovnej stav a datum konce období.
       case 'customer.subscription.updated': {
         const sub = event.data.object;
-        await admin
+        must(await admin
           .from('profiles')
           .update({
             subscription_status: sub.status === 'active' || sub.status === 'trialing' ? 'active' : sub.status,
             current_period_end: periodEndISO(sub),
           })
-          .eq('stripe_subscription_id', sub.id);
+          .eq('stripe_subscription_id', sub.id));
         break;
       }
 
       // Zrušené předplatné — odeber přístup.
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
-        await admin
+        must(await admin
           .from('profiles')
           .update({ subscription_status: 'canceled' })
-          .eq('stripe_subscription_id', sub.id);
+          .eq('stripe_subscription_id', sub.id));
         break;
       }
 
       // Neúspěšná platba (např. při obnově) — označ jako po splatnosti.
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        const subId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id;
+        // Novější verze API (basil+) přesunuly odkaz na předplatné do invoice.parent.
+        const rawSub = invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
+        const subId = typeof rawSub === 'string' ? rawSub : rawSub?.id;
         if (subId) {
-          await admin
+          must(await admin
             .from('profiles')
             .update({ subscription_status: 'past_due' })
-            .eq('stripe_subscription_id', subId);
+            .eq('stripe_subscription_id', subId));
         }
         break;
       }

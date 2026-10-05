@@ -84,7 +84,10 @@ export default function AuthModal() {
           {mode === 'register' && (
             <Field icon={User} label="Jméno" value={form.name} onChange={set('name')} placeholder="Jan Novák" autoComplete="name" required />
           )}
-          <Field icon={Mail} label="E-mail" type="email" value={form.email} onChange={set('email')} placeholder="tvuj@email.cz" autoComplete="email" required />
+          <Field icon={Mail} label="E-mail" type="email" value={form.email} onChange={set('email')} placeholder="tvuj@email.cz" autoComplete="email" required readOnly={!!pendingStripeSession} />
+          {pendingStripeSession && (
+            <p className="-mt-1 text-xs text-zinc-500">Členství aktivujeme na e-mail, kterým jsi zaplatil(a). Pokud tu účet už máš, přihlas se jím.</p>
+          )}
           {mode !== 'reset' && (
             <Field icon={Lock} label="Heslo" type="password" value={form.password} onChange={set('password')} placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={6} />
           )}
