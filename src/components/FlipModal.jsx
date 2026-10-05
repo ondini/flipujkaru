@@ -1,22 +1,33 @@
-import { useEffect } from 'react';
-import { X, MapPin, Radar, AlertTriangle, Check, TrendingUp, Clock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { X, MapPin, Radar, AlertTriangle, Check, TrendingUp, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { czk } from '../data/content.js';
 
 /** Detail flipu v modálním okně. flip=null → zavřeno. */
 export default function FlipModal({ flip, onClose }) {
-  // Zavření na Esc + zamknutí scrollu pozadí
+  const [idx, setIdx] = useState(0);
+  const photos = (flip?.images && flip.images.length ? flip.images : flip?.img ? [flip.img] : []).filter(Boolean);
+
+  // Zavření na Esc, šipky listují fotkami + zamknutí scrollu pozadí
   useEffect(() => {
     if (!flip) return;
-    const onKey = (e) => e.key === 'Escape' && onClose();
+    setIdx(0);
+    const n = Math.max(1, photos.length);
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight') setIdx((i) => (i + 1) % n);
+      if (e.key === 'ArrowLeft') setIdx((i) => (i - 1 + n) % n);
+    };
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [flip, onClose]);
+  }, [flip, photos.length, onClose]);
 
   if (!flip) return null;
+  const next = () => setIdx((i) => (i + 1) % photos.length);
+  const prev = () => setIdx((i) => (i - 1 + photos.length) % photos.length);
 
   const invested = flip.buy + flip.repair;
   const profit = flip.sell - invested;
@@ -50,7 +61,14 @@ export default function FlipModal({ flip, onClose }) {
       >
         {/* Hlavička s fotkou */}
         <div className="relative aspect-[16/9] grid place-items-center overflow-hidden bg-gradient-to-br from-ink-700 to-ink-850">
-          <img src={flip.img} alt={`${flip.brand} ${flip.model}`} onError={onImgError} className="h-full w-full object-cover" />
+          <img key={photos[idx]} src={photos[idx]} alt={`${flip.brand} ${flip.model} – foto ${idx + 1}`} onError={onImgError} className="h-full w-full object-cover" />
+          {photos.length > 1 && (
+            <>
+              <button onClick={prev} aria-label="Předchozí" className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/10 bg-ink-950/60 text-white backdrop-blur transition hover:bg-ink-950"><ChevronLeft className="h-5 w-5" /></button>
+              <button onClick={next} aria-label="Další" className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/10 bg-ink-950/60 text-white backdrop-blur transition hover:bg-ink-950"><ChevronRight className="h-5 w-5" /></button>
+              <span className="absolute bottom-3 right-3 rounded-lg bg-ink-950/70 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">{idx + 1} / {photos.length}</span>
+            </>
+          )}
           <button
             onClick={onClose}
             aria-label="Zavřít"
@@ -62,6 +80,15 @@ export default function FlipModal({ flip, onClose }) {
             <TrendingUp className="h-4 w-4" /> {hasNumbers ? `Čistý zisk +${czk(profit)}` : 'Prodáno'}
           </span>
         </div>
+        {photos.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto bg-ink-950 p-3">
+            {photos.map((p, i) => (
+              <button key={i} onClick={() => setIdx(i)} className={`h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition ${i === idx ? 'border-accent' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                <img src={p} alt="" loading="lazy" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="p-6 md:p-8">
           <div className="flex items-start justify-between gap-3">
