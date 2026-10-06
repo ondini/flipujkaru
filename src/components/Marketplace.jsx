@@ -37,6 +37,7 @@ const mapFlip = (r) => {
     buy, repair, sell,
     weeks: r.flip_weeks || null,
     img: images[0] || r.image_url,
+    images,
     location: r.location || '',
     found: r.found_note || '',
     problems: Array.isArray(r.problems) ? r.problems : [],
