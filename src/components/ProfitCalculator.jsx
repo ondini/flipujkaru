@@ -100,7 +100,7 @@ export default function ProfitCalculator() {
   const barWidth = Math.max(2, Math.min(100, Math.abs(margin)));
 
   return (
-    <section id="kalkulacka" className="relative border-y border-white/5 bg-ink-900/40 py-20 md:py-28">
+    <section id="kalkulacka" className="relative overflow-hidden border-y border-white/5 bg-ink-900/40 py-20 md:py-28">
       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-accent/5 blur-[130px] pointer-events-none" />
 
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">

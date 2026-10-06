@@ -4,8 +4,15 @@
 
 /* ============ GLOBÁLNÍ ZÁKLAD ============ */
 @layer base {
+  /* overflow-x: hidden na body mobilní prohlížeče při oddálení ignorují (layout
+     viewport se roztáhne na přečnívající obsah) — clip ořízne skutečně a
+     na rozdíl od hidden nevytváří scroll kontejner, takže sticky funguje dál */
+  html,
   body {
-    @apply bg-ink-950 text-zinc-300 font-sans antialiased overflow-x-hidden;
+    overflow-x: clip;
+  }
+  body {
+    @apply bg-ink-950 text-zinc-300 font-sans antialiased;
   }
   ::selection {
     background: #39ff14;

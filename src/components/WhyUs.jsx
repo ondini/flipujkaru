@@ -100,7 +100,7 @@ export default function WhyUs() {
   const { siteText: t } = useApp();
 
   return (
-    <section id="proc-my" className="relative py-20 md:py-28">
+    <section id="proc-my" className="relative overflow-hidden py-20 md:py-28">
       <div className="absolute left-1/2 top-20 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-accent/5 blur-[150px] pointer-events-none" />
       <div className="relative mx-auto max-w-7xl px-6">
         <Reveal className="mx-auto max-w-2xl text-center">
