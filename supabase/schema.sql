@@ -25,6 +25,11 @@ drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles
   for update using (auth.uid() = id);
 
+-- RLS neomezuje sloupce → uživatel smí měnit jen jméno, ne roli ani členství
+-- (viz profiles_lockdown.sql)
+revoke insert, update, delete, truncate on public.profiles from anon, authenticated;
+grant update (full_name) on public.profiles to authenticated;
+
 -- Po registraci automaticky vytvoř profil
 create or replace function public.handle_new_user()
 returns trigger

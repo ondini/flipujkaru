@@ -18,7 +18,7 @@ export const DASH_NAV = [
 /** Onboarding kroky (uvítací checklist na přehledu) */
 export const ONBOARDING = [
   { key: 'profil', label: 'Vyplň si profil', hint: 'Jméno a parametry hlídače' },
-  { key: 'kurz', label: 'Projdi první lekci', hint: 'Základy car flippingu' },
+  { key: 'kurz', label: 'Projdi první lekci', hint: 'Kurzy v Mých materiálech' },
   { key: 'doporucene', label: 'Projdi doporučené flipy', hint: 'Značky, cena, rozdíl od trhu' },
   { key: 'flip', label: 'Zaznamenej první flip', hint: 'Sleduj svůj zisk' },
 ];
@@ -45,14 +45,6 @@ export const DASH_STATS = [
   { label: 'Ušetřeno přes kalkulačku', value: '184 000 Kč', icon: 'PiggyBank' },
   { label: 'Tvé flipy', value: '3', icon: 'Car' },
   { label: 'Body v komunitě', value: '1 240', icon: 'Trophy' },
-];
-
-/** Vzdělávací materiály s progresem */
-export const COURSES = [
-  { title: 'Základy car flippingu', lessons: 12, done: 12 },
-  { title: 'Jak číst inzerát a odhalit vadu', lessons: 9, done: 6 },
-  { title: 'Dovoz ze zahraničí krok za krokem', lessons: 8, done: 2 },
-  { title: 'Vyjednávání a prodej se ziskem', lessons: 10, done: 0 },
 ];
 
 /** Historie faktur */

@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Car, TrendingUp } from 'lucide-react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Car, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CARS, FLIPS, FILTERS, MARKET_VIEWS } from '../data/content.js';
 import { supabase } from '../lib/supabase.js';
 import { useApp } from '../AppContext.jsx';
@@ -13,6 +13,47 @@ const FlipModal = lazy(() => import('./FlipModal.jsx'));
 
 // Ikony pro přepínač režimů
 const VIEW_ICONS = { Car, TrendingUp };
+
+// Počet karet na stránku (2 řádky po 3 na desktopu)
+const PAGE_SIZE = 6;
+
+/** Placeholder karty, dokud se auta načítají z DB */
+function CardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-ink-850">
+      <div className="aspect-[16/10] animate-pulse bg-white/5" />
+      <div className="space-y-3 p-5">
+        <div className="h-5 w-2/3 animate-pulse rounded bg-white/5" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-white/5" />
+        <div className="h-6 w-1/3 animate-pulse rounded bg-white/5" />
+      </div>
+    </div>
+  );
+}
+
+/** Stránkování pod mřížkou — zobrazí se jen při víc než jedné stránce */
+function Pager({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+  const btn = 'grid h-10 min-w-10 place-items-center rounded-xl border px-3 text-sm font-semibold transition disabled:opacity-40';
+  return (
+    <nav aria-label="Stránkování" className="mt-10 flex flex-wrap items-center justify-center gap-2">
+      <button type="button" onClick={() => onChange(page - 1)} disabled={page <= 1} aria-label="Předchozí stránka"
+        className={`${btn} border-white/10 text-zinc-300 hover:border-white/30 hover:text-white`}>
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+        <button key={n} type="button" onClick={() => onChange(n)} aria-current={n === page ? 'page' : undefined}
+          className={`${btn} ${n === page ? 'border-accent bg-accent text-ink-950 shadow-glow' : 'border-white/10 text-zinc-400 hover:border-white/30 hover:text-white'}`}>
+          {n}
+        </button>
+      ))}
+      <button type="button" onClick={() => onChange(page + 1)} disabled={page >= totalPages} aria-label="Další stránka"
+        className={`${btn} border-white/10 text-zinc-300 hover:border-white/30 hover:text-white`}>
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </nav>
+  );
+}
 
 // Řádek z databáze → tvar, který očekává karta auta
 const mapCar = (r) => {
@@ -51,7 +92,9 @@ export default function Marketplace() {
   const [filter, setFilter] = useState('vse');
   const [activeFlip, setActiveFlip] = useState(null); // otevřený detail flipu
   const [activeCar, setActiveCar] = useState(null); // otevřený detail auta
-  const [rows, setRows] = useState(null); // řádky z DB (null = ještě nenačteno → statický fallback)
+  const [rows, setRows] = useState(null); // řádky z DB (null = ještě se načítá)
+  const [page, setPage] = useState(1);
+  const sectionRef = useRef(null);
   const { siteText: t } = useApp();
 
   // Načtení aut z databáze (kromě konceptů). Když DB není/prázdná, zůstanou statická.
@@ -71,6 +114,7 @@ export default function Marketplace() {
           if (cancelled) return;
           if (!error && data) setRows(data);
           else if (retry) setTimeout(() => fetchCars(false), 800);
+          else setRows([]); // DB nedostupná → statický fallback
         });
     };
     fetchCars();
@@ -84,6 +128,9 @@ export default function Marketplace() {
     return () => window.removeEventListener('marketplace:setview', onSetView);
   }, []);
 
+  // Dokud DB neodpoví, ukazuj skeletony — jinak by na okamžik problikl statický demo seznam.
+  const loading = !!supabase && rows === null;
+
   // Auta na prodej = vše kromě prodaných; prodaná se přesouvají do „Úspěšné flipy".
   const usingDb = rows && rows.length > 0;
   const saleCars = usingDb ? rows.filter((r) => r.status !== 'sold').map(mapCar) : CARS;
@@ -95,8 +142,22 @@ export default function Marketplace() {
     [filter, saleCars]
   );
 
+  // Stránkování aktuální záložky; při změně záložky/filtru zpět na první stránku
+  const list = view === 'sale' ? cars : flips;
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const curPage = Math.min(page, totalPages);
+  const pageItems = list.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
+  useEffect(() => setPage(1), [view, filter]);
+
+  // Po přepnutí stránky odscrolluj na začátek sekce, ať je vidět nová mřížka od prvního řádku
+  const goToPage = (n) => {
+    setPage(n);
+    const top = sectionRef.current?.getBoundingClientRect().top;
+    if (top != null && top < 0) sectionRef.current.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
-    <section id="marketplace" className="relative py-20 md:py-28">
+    <section ref={sectionRef} id="marketplace" className="relative py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6">
         {/* Hlavička */}
         <Reveal className="max-w-2xl">
@@ -151,12 +212,15 @@ export default function Marketplace() {
             </div>
 
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {cars.map((car, i) => (
-                <Reveal key={car.brand + car.model} delay={i * 40}>
-                  <CarCard car={car} onOpen={() => setActiveCar(car)} />
-                </Reveal>
-              ))}
+              {loading
+                ? Array.from({ length: 3 }, (_, i) => <CardSkeleton key={i} />)
+                : pageItems.map((car, i) => (
+                    <Reveal key={`${curPage}-${i}-${car.brand}${car.model}`} delay={i * 40}>
+                      <CarCard car={car} onOpen={() => setActiveCar(car)} />
+                    </Reveal>
+                  ))}
             </div>
+            {!loading && <Pager page={curPage} totalPages={totalPages} onChange={goToPage} />}
           </>
         )}
 
@@ -167,12 +231,15 @@ export default function Marketplace() {
               Reálná čísla členů akademie. <span className="text-accent">Nákup → po opravě → prodej</span> — a co zbylo v kapse.
             </p>
             <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {flips.map((flip, i) => (
-                <Reveal key={flip.brand + flip.model + i} delay={i * 40}>
-                  <FlipCard flip={flip} onOpen={() => setActiveFlip(flip)} />
-                </Reveal>
-              ))}
+              {loading
+                ? Array.from({ length: 3 }, (_, i) => <CardSkeleton key={i} />)
+                : pageItems.map((flip, i) => (
+                    <Reveal key={`${curPage}-${i}-${flip.brand}${flip.model}`} delay={i * 40}>
+                      <FlipCard flip={flip} onOpen={() => setActiveFlip(flip)} />
+                    </Reveal>
+                  ))}
             </div>
+            {!loading && <Pager page={curPage} totalPages={totalPages} onChange={goToPage} />}
             <div className="mt-10 text-center">
               <a href="#cenik" className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-semibold text-ink-950 shadow-glow transition hover:brightness-110 hover:scale-[1.02]">
                 Chci flipovat taky <TrendingUp className="w-4 h-4" />

@@ -64,7 +64,11 @@ export function AppProvider({ children }) {
       if (u) await loadMembership(u);
       else { setMember(null); setIsAdmin(false); }
     };
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => apply(session));
+    // Callback NESMÍ čekat na další Supabase dotaz: supabase-js ho volá pod
+    // auth zámkem a await na dotaz (ten si bere session = stejný zámek) zámek
+    // zablokuje navždy — po obnově tokenu (návrat na tab, expirace) pak visí
+    // VŠECHNY dotazy (Moje flipy, Žebříčky, role admina…). Proto odložit.
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => { setTimeout(() => apply(session), 0); });
     return () => sub.subscription.unsubscribe();
   }, []);
 
