@@ -9,9 +9,11 @@ import { useApp } from '../AppContext.jsx';
 import { czk, kmFmt } from '../data/content.js';
 import { supabase } from '../lib/supabase.js';
 import { dealsApi } from '../lib/dealsApi.js';
+import { coursesApi } from '../lib/coursesApi.js';
 import { useUndervalued, useMobiledeManufacturers, useMobiledeModels } from '../hooks/useDeals.js';
-import { DASH_NAV, DASH_STATS, COURSES, INVOICES, ONBOARDING } from '../data/member.js';
+import { DASH_NAV, DASH_STATS, INVOICES, ONBOARDING } from '../data/member.js';
 import { LogoMark } from './Logo.jsx';
+import CourseRow from './dashboard/CourseRow.jsx';
 
 // Panely → lazy, načtou se až po kliknutí na danou záložku
 const AdminCars = lazy(() => import('./AdminCars.jsx'));
@@ -20,6 +22,7 @@ const MyFlips = lazy(() => import('./dashboard/MyFlips.jsx'));
 const Leaderboard = lazy(() => import('./dashboard/Leaderboard.jsx'));
 const CalcPanel = lazy(() => import('./dashboard/CalcPanel.jsx'));
 const Community = lazy(() => import('./dashboard/Community.jsx'));
+const Courses = lazy(() => import('./dashboard/Courses.jsx'));
 
 const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, Users, TrendingUp, Sparkles, Trophy };
 const STAT_ICONS = { PiggyBank, Car, Trophy };
@@ -27,6 +30,8 @@ const STAT_ICONS = { PiggyBank, Car, Trophy };
 export default function Dashboard() {
   const { user, member, isAdmin, backToSite, signOut } = useApp();
   const [tab, setTab] = useState('prehled');
+  const [courseId, setCourseId] = useState(null); // otevřený kurz v Mých materiálech
+  const openCourse = (id) => { setCourseId(id); setTab('materialy'); };
   const planName = member?.plan?.name || null; // null = zatím bez členství
   // Adminovi přidáme do menu „Správa aut"
   const navItems = isAdmin
@@ -64,7 +69,7 @@ export default function Dashboard() {
               return (
                 <button
                   key={n.key}
-                  onClick={() => setTab(n.key)}
+                  onClick={() => { setTab(n.key); if (n.key === 'materialy') setCourseId(null); }}
                   className={`inline-flex shrink-0 items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium transition ${active ? 'bg-accent text-ink-950' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
                 >
                   {Icon && <Icon className="h-4 w-4" />} {n.label}
@@ -77,15 +82,15 @@ export default function Dashboard() {
         {/* Obsah */}
         <main className="min-w-0 flex-1">
           <Suspense fallback={<div className="flex items-center gap-2 text-sm text-zinc-400"><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-accent" /> Načítám…</div>}>
-            {tab === 'prehled' && <Overview user={user} planName={planName} backToSite={backToSite} setTab={setTab} />}
+            {tab === 'prehled' && <Overview user={user} planName={planName} isAdmin={isAdmin} backToSite={backToSite} setTab={setTab} openCourse={openCourse} />}
             {tab === 'flipy' && <MyFlips />}
             {tab === 'zebricky' && <Leaderboard />}
             {tab === 'kalkulacka' && <CalcPanel />}
             {tab === 'doporucene' && <RecommendedFlips />}
-            {tab === 'materialy' && <Materials />}
+            {tab === 'materialy' && <Courses courseId={courseId} setCourseId={setCourseId} />}
             {tab === 'komunita' && <Community />}
             {tab === 'faktury' && <Invoices planName={planName} />}
-            {tab === 'nastaveni' && <SettingsPanel user={user} planName={planName} signOut={signOut} />}
+            {tab === 'nastaveni' && <SettingsPanel user={user} planName={planName} isAdmin={isAdmin} signOut={signOut} />}
             {tab === 'admin' && isAdmin && <AdminCars />}
             {tab === 'texty' && isAdmin && <TextsAdmin />}
           </Suspense>
@@ -103,8 +108,9 @@ const QUICK = [
   { tab: 'materialy', label: 'Materiály', icon: GraduationCap },
 ];
 
-function Overview({ user, planName, backToSite, setTab }) {
+function Overview({ user, planName, isAdmin, backToSite, setTab, openCourse }) {
   const [recommended, setRecommended] = useState([]);
+  const [courses, setCourses] = useState(null);
   const firstName = (user?.user_metadata?.full_name || '').split(' ')[0];
 
   // Doporučená auta z databáze
@@ -113,6 +119,17 @@ function Overview({ user, planName, backToSite, setTab }) {
     supabase.from('cars').select('brand,model,year,price,image_url').eq('status', 'published').order('sort').limit(3)
       .then(({ data }) => { if (data) setRecommended(data); });
   }, []);
+
+  // Pokrok v kurzech Akademie (rozpracované kurzy nahoru)
+  useEffect(() => {
+    if (!supabase) return;
+    coursesApi.list().then(setCourses).catch(() => setCourses([]));
+  }, []);
+  const courseRows = (courses || [])
+    .map((c) => ({ id: c.id, title: c.title, lessons: c.outline.length, done: c.done.size }))
+    .sort((a, b) => (b.done > 0 && b.done < b.lessons) - (a.done > 0 && a.done < a.lessons))
+    .slice(0, 3);
+  const lessonStarted = (courses || []).some((c) => c.done.size > 0);
 
   return (
     <div className="space-y-6">
@@ -131,7 +148,7 @@ function Overview({ user, planName, backToSite, setTab }) {
         ))}
       </div>
 
-      {/* Karta členství — aktivní vs. zatím bez členství */}
+      {/* Karta členství — aktivní / admin (plný přístup bez předplatného) / zatím bez členství */}
       {planName ? (
         <div className="grad-border rounded-2xl p-5 shadow-glow">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -142,6 +159,12 @@ function Overview({ user, planName, backToSite, setTab }) {
             </div>
             <button onClick={() => setTab('faktury')} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">Spravovat</button>
           </div>
+        </div>
+      ) : isAdmin ? (
+        <div className="grad-border rounded-2xl p-5 shadow-glow">
+          <div className="text-xs uppercase tracking-wide text-zinc-400">Administrátorský účet</div>
+          <div className="mt-0.5 font-display text-2xl font-bold text-white">Plný přístup</div>
+          <div className="mt-1 inline-flex items-center gap-1.5 text-sm text-accent"><span className="h-2 w-2 rounded-full bg-accent" /> Materiály, doporučené flipy i správa webu bez předplatného</div>
         </div>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-ink-850 p-5">
@@ -174,15 +197,18 @@ function Overview({ user, planName, backToSite, setTab }) {
       <div className="rounded-2xl border border-white/10 bg-ink-850 p-5">
         <h3 className="font-display font-bold text-white">Tvoje první kroky</h3>
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {ONBOARDING.map((o, i) => (
+          {ONBOARDING.map((o, i) => {
+            const checked = i === 0 || (o.key === 'kurz' && lessonStarted);
+            return (
             <div key={o.key} className="flex items-center gap-3 rounded-xl bg-ink-950 px-3 py-2.5">
-              <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${i === 0 ? 'bg-accent text-ink-950' : 'border border-white/15 text-zinc-500'}`}>{i === 0 ? <Check className="h-3.5 w-3.5" /> : i + 1}</span>
+              <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${checked ? 'bg-accent text-ink-950' : 'border border-white/15 text-zinc-500'}`}>{checked ? <Check className="h-3.5 w-3.5" /> : i + 1}</span>
               <div className="min-w-0">
                 <div className="text-sm font-medium text-white">{o.label}</div>
                 <div className="truncate text-xs text-zinc-500">{o.hint}</div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -225,7 +251,13 @@ function Overview({ user, planName, backToSite, setTab }) {
             <button onClick={() => setTab('materialy')} className="inline-flex items-center text-sm font-medium text-accent hover:gap-1">Vše <ChevronRight className="h-4 w-4" /></button>
           </div>
           <div className="mt-4 space-y-3">
-            {COURSES.slice(0, 3).map((c) => <CourseRow key={c.title} c={c} />)}
+            {!courses && <p className="text-sm text-zinc-500">Načítám…</p>}
+            {courses && courseRows.length === 0 && <p className="text-sm text-zinc-500">Kurzy se teď nepodařilo načíst.</p>}
+            {courseRows.map((c) => (
+              <button key={c.id} onClick={() => openCourse(c.id)} className="block w-full rounded-xl text-left transition hover:opacity-80">
+                <CourseRow c={c} />
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -541,46 +573,6 @@ function RecommendedFlips() {
   );
 }
 
-/* ---------- Materiály ---------- */
-function Materials() {
-  return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="inline-flex items-center gap-2 font-display text-2xl font-bold text-white"><GraduationCap className="h-5 w-5 text-accent" /> Mé materiály</h1>
-        <p className="mt-1 text-sm text-zinc-400">Vzdělávací kurzy a tvůj pokrok.</p>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {COURSES.map((c) => (
-          <div key={c.title} className="rounded-2xl border border-white/10 bg-ink-850 p-5">
-            <CourseRow c={c} />
-            <button className="mt-4 w-full rounded-xl border border-white/15 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
-              {c.done === 0 ? 'Začít kurz' : c.done === c.lessons ? 'Zopakovat' : 'Pokračovat'}
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CourseRow({ c }) {
-  const pct = Math.round((c.done / c.lessons) * 100);
-  const done = c.done === c.lessons;
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-2 text-sm font-medium text-white">
-          {done && <Check className="h-4 w-4 text-accent" />} {c.title}
-        </span>
-        <span className="shrink-0 text-xs text-zinc-500">{c.done}/{c.lessons}</span>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-700">
-        <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
 /* ---------- Faktury ---------- */
 function Invoices({ planName }) {
   return (
@@ -619,7 +611,7 @@ function Invoices({ planName }) {
 }
 
 /* ---------- Nastavení ---------- */
-function SettingsPanel({ user, planName, signOut }) {
+function SettingsPanel({ user, planName, isAdmin, signOut }) {
   return (
     <div className="space-y-5">
       <div>
@@ -652,7 +644,7 @@ function SettingsPanel({ user, planName, signOut }) {
       {/* Členství */}
       <div className="rounded-2xl border border-white/10 bg-ink-850 p-5">
         <h3 className="font-display font-bold text-white">Členství</h3>
-        <p className="mt-1 text-sm text-zinc-400">Aktuální plán: <span className="font-semibold text-accent">{planName || 'žádný'}</span>{planName ? ' · obnovení 15. 7. 2026' : ''}</p>
+        <p className="mt-1 text-sm text-zinc-400">Aktuální plán: <span className="font-semibold text-accent">{planName || (isAdmin ? 'administrátor (plný přístup)' : 'žádný')}</span>{planName ? ' · obnovení 15. 7. 2026' : ''}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:brightness-110">Změnit plán</button>
           <button onClick={signOut} className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20">Odhlásit se</button>
