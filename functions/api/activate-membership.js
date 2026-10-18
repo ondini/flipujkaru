@@ -47,6 +47,10 @@ export async function onRequestPost({ request, env }) {
       .eq('id', user.id);
     if (upErr) throw upErr;
 
+    // ID Checkout Session pro „Propojit Telegram" v kabinetu. Zvlášť a bez throw:
+    // dokud neběží migrace (supabase/membership.sql), aktivace funguje dál.
+    await admin.from('profiles').update({ stripe_checkout_session_id: session.id }).eq('id', user.id);
+
     return json({ ok: true, plan: session.metadata?.planName, yearly: session.metadata?.yearly === 'true' });
   } catch (err) {
     console.error('activate-membership error:', err);

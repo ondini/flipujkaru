@@ -76,6 +76,8 @@ export async function onRequestPost({ request, env }) {
             current_period_end: periodEndISO(sub),
           })
           .eq('id', userId));
+        // Pro „Propojit Telegram" — best-effort, chybějící sloupec nesmí vyvolat retry.
+        await admin.from('profiles').update({ stripe_checkout_session_id: session.id }).eq('id', userId);
         break;
       }
 

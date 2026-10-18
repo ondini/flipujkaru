@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, SUPABASE_READY } from './lib/supabase.js';
 import { PLANS } from './data/content.js';
 import { DEFAULT_BILLING } from './config/billing.js';
+import { savePaidSession, getPaidSession } from './lib/telegram.js';
 
 /* Sdílený stav aplikace: účty (Supabase), přepínání web ↔ administrace, checkout. */
 const AppContext = createContext(null);
@@ -16,6 +17,9 @@ export function AppProvider({ children }) {
   const [authOpen, setAuthOpen] = useState(false); // okno přihlášení/registrace
   const [pendingPlan, setPendingPlan] = useState(null); // plán, který chtěl koupit před přihlášením
   const [pendingStripeSession, setPendingStripeSession] = useState(null); // { sessionId, email } — zaplaceno, čeká se na vytvoření účtu
+  const [justPaidSession, setJustPaidSession] = useState(null); // právě zaplacená Checkout Session → tlačítko „Otevřít Telegram"
+  const [telegramSession, setTelegramSession] = useState(getPaidSession); // Checkout Session pro „Propojit Telegram" v kabinetu
+  const [telegramLinked, setTelegramLinked] = useState(false); // bot nahlásil vstup do skupiny (telegram_links)
 
   // Načte členství uživatele z databáze (profiles). Jeden retry po krátké
   // prodlevě při chybě (přechodná síťová/RLS timing chyba), než se vzdá.
@@ -28,6 +32,10 @@ export function AppProvider({ children }) {
         .single();
       if (error) throw error;
       setIsAdmin(data?.role === 'admin');
+      // Session ID poslední platby (pro Telegram) — zvlášť a best-effort, ať
+      // chybějící sloupec (nespuštěná migrace) nerozbije načtení členství.
+      supabase.from('profiles').select('stripe_checkout_session_id').eq('id', u.id).single()
+        .then(({ data: d }) => { if (d?.stripe_checkout_session_id) setTelegramSession(d.stripe_checkout_session_id); });
       if (data?.plan && data.subscription_status === 'active') {
         const plan = PLANS.find((p) => p.name === data.plan);
         setMember(plan ? { plan, email: u.email, renews: data.current_period_end } : null);
@@ -72,6 +80,14 @@ export function AppProvider({ children }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Vstoupil už člen do Telegram skupiny? Zapisuje bot přes /api/telegram-linked;
+  // RLS pustí jen záznam k platbě přihlášeného účtu. Best-effort (bez tabulky = false).
+  useEffect(() => {
+    if (!user || !telegramSession) { setTelegramLinked(false); return; }
+    supabase.from('telegram_links').select('session_id').eq('session_id', telegramSession).maybeSingle()
+      .then(({ data }) => setTelegramLinked(!!data));
+  }, [user, telegramSession]);
+
   // Poté, co je uživatel přihlášen (nově vytvořený nebo existující účet):
   // ověř platbu u backendu a zapiš členství k účtu, pak otevři administraci.
   const activateAfterCheckout = async (sessionId) => {
@@ -108,6 +124,9 @@ export function AppProvider({ children }) {
       const res = await fetch(`/api/checkout-session?session_id=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
       if (!data.paid) return;
+      setJustPaidSession(sessionId);
+      setTelegramSession(sessionId);
+      savePaidSession(sessionId);
       const { data: { session } } = SUPABASE_READY ? await supabase.auth.getSession() : { data: { session: null } };
       const paidEmail = (data.email || '').trim().toLowerCase();
       const accountEmail = (session?.user?.email || '').trim().toLowerCase();
@@ -219,7 +238,7 @@ export function AppProvider({ children }) {
       value={{
         view, checkout, member, user, isAdmin, authOpen, siteText, reloadContent,
         startCheckout, closeCheckout, completePurchase, activateAfterCheckout, handleCheckoutReturn,
-        pendingStripeSession,
+        pendingStripeSession, justPaidSession, telegramSession, telegramLinked, dismissJustPaid: () => setJustPaidSession(null),
         openDashboard, backToSite,
         signUp, signIn, signOut, resetPassword,
         openAuth, closeAuth, afterAuth,

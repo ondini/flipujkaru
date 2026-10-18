@@ -5,6 +5,10 @@ import App from './App.jsx';
 import '@fontsource-variable/inter/wght.css';
 import '@fontsource-variable/space-grotesk/wght.css';
 import './index.css';
+import { captureTg } from './lib/telegram.js';
+
+// ?tg=… z odkazu (Telegram) → uložit dřív, než App vyčistí URL.
+captureTg();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

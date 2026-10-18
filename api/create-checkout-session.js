@@ -14,12 +14,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { priceId, email, planName, yearly, userId } = req.body || {};
+    const { priceId, email, planName, yearly, userId, tg } = req.body || {};
     if (!priceId) return res.status(400).json({ error: 'Chybí priceId.' });
 
     // Odkud uživatel přišel (pro návratové URL)
     const origin = req.headers.origin || `https://${req.headers.host}`;
     const meta = { planName: planName || '', yearly: String(!!yearly), userId: userId || '' };
+    // Atribuce z Telegramu (?tg=…) — jen když je; Stripe metadata hodnota max. 500 znaků.
+    if (typeof tg === 'string' && tg.trim()) meta.tg = tg.trim().slice(0, 500);
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription', // opakované předplatné

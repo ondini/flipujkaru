@@ -2,8 +2,8 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Radar, GraduationCap, Receipt, Settings, PiggyBank, Car, Trophy,
   LogOut, ArrowLeft, ExternalLink, Download, Check, TrendingUp, ChevronRight, ChevronLeft, Type,
-  Calculator, Users, ArrowRight, Sparkles, SlidersHorizontal, RotateCcw, Table2, Gauge,
-  ArrowUpDown, ArrowUp, ArrowDown, Search, Loader2,
+  Calculator, ArrowRight, Sparkles, SlidersHorizontal, RotateCcw, Table2, Gauge,
+  ArrowUpDown, ArrowUp, ArrowDown, Search, Loader2, Send,
 } from 'lucide-react';
 import { useApp } from '../AppContext.jsx';
 import { czk, kmFmt } from '../data/content.js';
@@ -13,6 +13,7 @@ import { coursesApi } from '../lib/coursesApi.js';
 import { useUndervalued, useMobiledeManufacturers, useMobiledeModels } from '../hooks/useDeals.js';
 import { DASH_NAV, DASH_STATS, INVOICES, ONBOARDING } from '../data/member.js';
 import { LogoMark } from './Logo.jsx';
+import { telegramLink } from '../lib/telegram.js';
 import CourseRow from './dashboard/CourseRow.jsx';
 
 // Panely → lazy, načtou se až po kliknutí na danou záložku
@@ -21,10 +22,9 @@ const TextsAdmin = lazy(() => import('./TextsAdmin.jsx'));
 const MyFlips = lazy(() => import('./dashboard/MyFlips.jsx'));
 const Leaderboard = lazy(() => import('./dashboard/Leaderboard.jsx'));
 const CalcPanel = lazy(() => import('./dashboard/CalcPanel.jsx'));
-const Community = lazy(() => import('./dashboard/Community.jsx'));
 const Courses = lazy(() => import('./dashboard/Courses.jsx'));
 
-const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, Users, TrendingUp, Sparkles, Trophy };
+const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, TrendingUp, Sparkles, Trophy };
 const STAT_ICONS = { PiggyBank, Car, Trophy };
 
 export default function Dashboard() {
@@ -88,7 +88,6 @@ export default function Dashboard() {
             {tab === 'kalkulacka' && <CalcPanel />}
             {tab === 'doporucene' && <RecommendedFlips />}
             {tab === 'materialy' && <Courses courseId={courseId} setCourseId={setCourseId} />}
-            {tab === 'komunita' && <Community />}
             {tab === 'faktury' && <Invoices planName={planName} />}
             {tab === 'nastaveni' && <SettingsPanel user={user} planName={planName} isAdmin={isAdmin} signOut={signOut} />}
             {tab === 'admin' && isAdmin && <AdminCars />}
@@ -109,6 +108,7 @@ const QUICK = [
 ];
 
 function Overview({ user, planName, isAdmin, backToSite, setTab, openCourse }) {
+  const { telegramSession, telegramLinked } = useApp(); // Checkout Session poslední platby → „Propojit Telegram"
   const [recommended, setRecommended] = useState([]);
   const [courses, setCourses] = useState(null);
   const firstName = (user?.user_metadata?.full_name || '').split(' ')[0];
@@ -157,7 +157,15 @@ function Overview({ user, planName, isAdmin, backToSite, setTab, openCourse }) {
               <div className="mt-0.5 font-display text-2xl font-bold text-white">Plán {planName}</div>
               <div className="mt-1 inline-flex items-center gap-1.5 text-sm text-accent"><span className="h-2 w-2 rounded-full bg-accent" /> Aktivní · obnovení 15. 7. 2026</div>
             </div>
-            <button onClick={() => setTab('faktury')} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">Spravovat</button>
+            <div className="flex flex-wrap gap-2">
+              {/* Před vstupem do skupiny „Propojit", potom vstup do komunity (bot pustí zpět i po odchodu / na novém telefonu) */}
+              {telegramSession && (
+                <a href={telegramLink(telegramSession)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-ink-950 transition hover:brightness-110">
+                  <Send className="h-4 w-4" /> {telegramLinked ? 'Otevřít komunitu' : 'Propojit Telegram'}
+                </a>
+              )}
+              <button onClick={() => setTab('faktury')} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">Spravovat</button>
+            </div>
           </div>
         </div>
       ) : isAdmin ? (
@@ -180,7 +188,7 @@ function Overview({ user, planName, isAdmin, backToSite, setTab, openCourse }) {
       )}
 
       {/* Statistiky */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {DASH_STATS.map((s) => {
           const Icon = STAT_ICONS[s.icon];
           return (
@@ -260,15 +268,6 @@ function Overview({ user, planName, isAdmin, backToSite, setTab, openCourse }) {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Komunita */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-accent/25 bg-accent-soft p-5">
-        <div>
-          <div className="font-display font-bold text-white">Discord komunita</div>
-          <div className="text-sm text-zinc-400">1 800+ členů, kteří si navzájem pomáhají. Připoj se.</div>
-        </div>
-        <a href="#" className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:brightness-110">Otevřít Discord <ExternalLink className="h-4 w-4" /></a>
       </div>
     </div>
   );

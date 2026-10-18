@@ -11,3 +11,4 @@ alter table public.profiles add column if not exists plan                 text; 
 alter table public.profiles add column if not exists subscription_status  text;         -- 'active' | 'canceled' | …
 alter table public.profiles add column if not exists current_period_end   timestamptz;  -- do kdy je členství zaplacené
 alter table public.profiles add column if not exists stripe_subscription_id text;        -- ID předplatného ve Stripe
+alter table public.profiles add column if not exists stripe_checkout_session_id text;    -- poslední Checkout Session (odkaz do Telegram bota)
