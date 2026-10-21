@@ -3,6 +3,7 @@ import { X, CreditCard, Landmark, ShieldCheck, Lock, Check, Loader2, Apple, Aler
 import { useApp } from '../AppContext.jsx';
 import { czk } from '../data/content.js';
 import { STRIPE_READY, DEFAULT_BILLING } from '../config/billing.js';
+import { getTg } from '../lib/telegram.js';
 
 const STEPS = ['Souhrn', 'Platba', 'Hotovo'];
 
@@ -56,7 +57,7 @@ export default function Checkout() {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: billing.priceId, email: form.email || undefined, planName: plan.name, billing: billing.id, userId: user?.id }),
+        body: JSON.stringify({ priceId: billing.priceId, email: form.email || undefined, planName: plan.name, billing: billing.id, userId: user?.id, tg: getTg() }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || 'Nepodařilo se vytvořit platbu.');

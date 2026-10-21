@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { AppProvider, useApp } from './AppContext.jsx';
 import SiteLanding from './components/SiteLanding.jsx'; // veřejný web = první obrazovka → eager (LCP)
 import LegalPage from './components/LegalPage.jsx';
+import TelegramJoin from './components/TelegramJoin.jsx';
 import { LEGAL_PAGES } from './data/legal.js';
 
 // Nekritické části → lazy chunky, načtou se až při interakci (mimo initial bundle)
@@ -48,6 +49,7 @@ function Root() {
       {/* Pokladna + přihlášení se stáhnou až když je uživatel otevře */}
       {checkout && <Suspense fallback={null}><Checkout /></Suspense>}
       {authOpen && <Suspense fallback={null}><AuthModal /></Suspense>}
+      <TelegramJoin />
     </div>
   );
 }

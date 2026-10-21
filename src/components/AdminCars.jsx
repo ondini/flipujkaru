@@ -27,7 +27,7 @@ const BADGES = [
 ];
 const STATUSES = [
   { v: 'published', l: 'Zveřejněno' },
-  { v: 'sold', l: 'Prodáno' },
+  { v: 'sold', l: 'Prodáno → úspěšné flipy' },
   { v: 'draft', l: 'Koncept (skryté)' },
 ];
 
@@ -87,7 +87,7 @@ export default function AdminCars() {
                 <div className="text-xs text-zinc-500">{c.year} · {czk(c.price)}</div>
               </div>
               <span className={`hidden rounded-md px-2 py-0.5 text-xs font-bold sm:inline ${c.status === 'published' ? 'bg-accent-soft text-accent' : c.status === 'sold' ? 'bg-red-500/15 text-red-400' : 'bg-white/10 text-zinc-400'}`}>
-                {STATUSES.find((s) => s.v === c.status)?.l || c.status}
+                {STATUSES.find((s) => s.v === c.status)?.l.split(' →')[0] || c.status}
               </span>
               <button onClick={() => setEditing(c)} aria-label="Upravit" className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-zinc-400 transition hover:text-white"><Pencil className="h-4 w-4" /></button>
               <button onClick={() => remove(c)} aria-label="Smazat" className="grid h-9 w-9 place-items-center rounded-lg border border-red-500/20 text-red-400 transition hover:bg-red-500/10"><Trash2 className="h-4 w-4" /></button>
@@ -112,6 +112,19 @@ function CarForm({ car, onClose, onSaved }) {
   const [error, setError] = useState('');
   const fileRef = useRef(null);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  const sold = f.status === 'sold';
+  // Označení Prodáno: prodejní cenu předvyplň cenou inzerátu (jde přepsat).
+  const setStatus = (v) => setF((p) => ({
+    ...p, status: v,
+    sell_price: v === 'sold' && (p.sell_price === '' || p.sell_price == null) ? p.price : p.sell_price,
+  }));
+  // Stejný výpočet jako karta úspěšného flipu (FlipCard): po opravě = nákup + oprava.
+  const nBuy = Number(f.buy_price) || 0;
+  const nRepair = Number(f.repair_cost) || 0;
+  const nSell = Number(f.sell_price) || 0;
+  const afterRepair = nBuy + nRepair;
+  const profit = nSell - afterRepair;
+  const hasNumbers = nBuy > 0 && nSell > 0;
 
   // Nahrání více fotek najednou
   const uploadPhotos = async (files) => {
@@ -220,26 +233,33 @@ function CarForm({ car, onClose, onSaved }) {
         <Input label="Stav" value={f.condition} onChange={(v) => set('condition', v)} placeholder="A+" />
         <Select label="Kategorie" value={f.category} onChange={(v) => set('category', v)} options={CATEGORIES} />
         <Select label="Štítek" value={f.badge_text} onChange={(v) => set('badge_text', v)} options={BADGES.map((b) => ({ v: b.v, l: b.l }))} />
-        <Select label="Stav inzerátu" value={f.status} onChange={(v) => set('status', v)} options={STATUSES} />
+        <Select label="Stav inzerátu" value={f.status} onChange={setStatus} options={STATUSES} />
         <Input label="Pořadí (menší = výš)" type="number" value={f.sort} onChange={(v) => set('sort', v)} />
         <label className="flex items-center gap-2 self-end pb-2 text-sm text-zinc-300">
           <input type="checkbox" checked={f.vat} onChange={(e) => set('vat', e.target.checked)} className="h-4 w-4 accent-accent" /> Možnost odpočtu DPH
         </label>
       </div>
 
-      {/* Příběh flipu — ukáže se v sekci „Úspěšné flipy", jakmile má vůz stav Prodáno */}
-      <div className="rounded-2xl border border-white/10 bg-ink-850 p-5">
+      {/* Příběh flipu — jen u prodaného vozu; po uložení se auto přesune do „Úspěšné flipy" */}
+      {sold && (
+      <div className="animate-fade-up rounded-2xl border border-accent/40 bg-ink-850 p-5 shadow-glow">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="inline-flex items-center gap-2 font-display font-bold text-white"><TrendingUp className="h-4 w-4 text-accent" /> Příběh flipu</h3>
-          <span className="text-xs text-zinc-500">Zobrazí se v „Úspěšné flipy", jakmile nastavíš stav Prodáno</span>
+          <h3 className="inline-flex items-center gap-2 font-display font-bold text-white"><TrendingUp className="h-4 w-4 text-accent" /> Výsledek flipu</h3>
+          <span className="text-xs text-zinc-500">Po uložení se auto přesune do „Úspěšné flipy"</span>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Input label="Nákupní cena (Kč)" type="number" value={f.buy_price} onChange={(v) => set('buy_price', v)} />
-          <Input label="Náklady na opravu (Kč)" type="number" value={f.repair_cost} onChange={(v) => set('repair_cost', v)} />
-          <Input label="Prodejní cena (Kč)" type="number" value={f.sell_price} onChange={(v) => set('sell_price', v)} placeholder="výchozí = cena inzerátu" />
-          <Input label="Délka flipu (týdny)" type="number" value={f.flip_weeks} onChange={(v) => set('flip_weeks', v)} />
-          <Input label="Lokalita" value={f.location} onChange={(v) => set('location', v)} placeholder="Praha, Česko" className="sm:col-span-2" />
+          <Input label="Nákup (Kč)" type="number" min="0" value={f.buy_price} onChange={(v) => set('buy_price', v)} required />
+          <Input label="Náklady na opravu (Kč)" type="number" min="0" value={f.repair_cost} onChange={(v) => set('repair_cost', v)} placeholder="0" />
+          <Computed label="Po opravě" hint="nákup + oprava" value={nBuy ? czk(afterRepair) : '—'} />
+          <Input label="Prodej (Kč)" type="number" min="0" value={f.sell_price} onChange={(v) => set('sell_price', v)} required />
+          <Computed label="Čistý zisk" hint="prodej − po opravě" value={hasNumbers ? `${profit >= 0 ? '+' : ''}${czk(profit)}` : '—'}
+            tone={!hasNumbers ? '' : profit >= 0 ? 'text-accent' : 'text-red-400'} className="sm:col-span-2" big />
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input label="Délka flipu (týdny)" type="number" min="0" value={f.flip_weeks} onChange={(v) => set('flip_weeks', v)} />
+          <Input label="Lokalita" value={f.location} onChange={(v) => set('location', v)} placeholder="Praha, Česko" />
         </div>
 
         <div className="mt-3 grid grid-cols-1 gap-3">
@@ -249,6 +269,7 @@ function CarForm({ car, onClose, onSaved }) {
           <Textarea label="Shrnutí / příběh" value={f.story} onChange={(v) => set('story', v)} rows={4} placeholder="Krátký příběh flipu — proč se povedl." />
         </div>
       </div>
+      )}
 
       <div className="flex gap-3">
         <button type="submit" disabled={saving || uploading} className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 font-semibold text-ink-950 shadow-glow transition enabled:hover:brightness-110 disabled:opacity-50">
@@ -257,6 +278,18 @@ function CarForm({ car, onClose, onSaved }) {
         <button type="button" onClick={onClose} className="rounded-xl border border-white/15 px-6 py-3 font-semibold text-white transition hover:bg-white/5">Zrušit</button>
       </div>
     </form>
+  );
+}
+
+/** Vypočtená hodnota (jen ke čtení) ve stylu vstupního pole */
+function Computed({ label, hint, value, tone = '', big = false, className = '' }) {
+  return (
+    <div className={className}>
+      <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+        {label}<span className="ml-1 font-normal text-zinc-600">· {hint}</span>
+      </span>
+      <div className={`rounded-xl border border-white/5 bg-ink-900 px-4 font-semibold ${big ? 'py-3 font-display text-xl' : 'py-2.5 text-sm'} ${tone || 'text-white'}`}>{value}</div>
+    </div>
   );
 }
 
