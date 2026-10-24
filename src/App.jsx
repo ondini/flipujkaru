@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './AppContext.jsx';
 import SiteLanding from './components/SiteLanding.jsx'; // veřejný web = první obrazovka → eager (LCP)
 import LegalPage from './components/LegalPage.jsx';
 import TelegramJoin from './components/TelegramJoin.jsx';
+import ActivationError from './components/ActivationError.jsx';
 import { LEGAL_PAGES } from './data/legal.js';
 
 // Nekritické části → lazy chunky, načtou se až při interakci (mimo initial bundle)
@@ -19,7 +20,14 @@ const legalSlug = window.location.pathname.replace(/^\/|\/$/g, '');
  * drží nad vším pokladnu a zpracuje návrat z platby (Stripe).
  */
 function Root() {
-  const { view, checkout, authOpen, handleCheckoutReturn } = useApp();
+  const { view, checkout, authOpen, handleCheckoutReturn, hasAccess, membershipLoaded, backToSite, startDefaultCheckout } = useApp();
+  const locked = view === 'dashboard' && (!membershipLoaded || !hasAccess);
+
+  // Klientská zóna jen se zaplaceným členstvím (nebo jako admin). Když přístup
+  // zmizí (zrušené/neuhrazené předplatné, odhlášení), vrať na web a nabídni platbu.
+  useEffect(() => {
+    if (view === 'dashboard' && membershipLoaded && !hasAccess) { backToSite(); startDefaultCheckout(); }
+  }, [view, membershipLoaded, hasAccess]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Návrat ze Stripe Checkout: ?checkout=success&session_id=… → ověř platbu.
   // Pay-first: pokud uživatel ještě nemá účet, handleCheckoutReturn otevře
@@ -38,7 +46,9 @@ function Root() {
 
   return (
     <div className="grain">
-      {view === 'dashboard' ? (
+      {locked ? (
+        <FullLoader />
+      ) : view === 'dashboard' ? (
         <Suspense fallback={<FullLoader />}>
           <Dashboard />
         </Suspense>
@@ -50,6 +60,7 @@ function Root() {
       {checkout && <Suspense fallback={null}><Checkout /></Suspense>}
       {authOpen && <Suspense fallback={null}><AuthModal /></Suspense>}
       <TelegramJoin />
+      <ActivationError />
     </div>
   );
 }
