@@ -234,11 +234,33 @@ export function AppProvider({ children }) {
   // Do klientské zóny jen s aktivním (zaplaceným) členstvím, nebo jako admin.
   const hasAccess = !!member || isAdmin;
   const startDefaultCheckout = () => setCheckout({ plan: PLANS[0], billing: DEFAULT_BILLING });
+  // Nečlen se přihlásil/registroval → nemá už zaplaceno? (pay-first, zavřená
+  // záložka před založením účtu). Nejdřív platba uložená v tomto prohlížeči
+  // (ověřitelná session), pak dohledání aktivního předplatného podle e-mailu.
+  const claimMembership = async (session) => {
+    const call = async (body) => {
+      try {
+        const res = await fetch('/api/activate-membership', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify(body),
+        });
+        return await res.json();
+      } catch { return {}; }
+    };
+    const stored = getPaidSession();
+    let data = stored ? await call({ sessionId: stored }) : {};
+    if (!data.ok) data = await call({});
+    if (!data.ok) return false;
+    if (data.sessionId) { setTelegramSession(data.sessionId); savePaidSession(data.sessionId); }
+    return loadMembership(session.user);
+  };
+
   // Rozhoduje až nad čerstvě načteným členstvím — stav z onAuthStateChange
   // se po přihlášení doplňuje se zpožděním a zaplacený člen by jinak skončil v pokladně.
   const openDashboard = async () => {
     const { data: { session } } = SUPABASE_READY ? await supabase.auth.getSession() : { data: { session: null } };
-    const access = session ? await loadMembership(session.user) : false;
+    const access = session ? (await loadMembership(session.user)) || (await claimMembership(session)) : false;
     if (!access) { startDefaultCheckout(); return; }
     setView('dashboard'); window.scrollTo(0, 0);
   };
