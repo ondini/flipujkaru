@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Menu, ArrowRight, LayoutDashboard, LogIn } from 'lucide-react';
+import { Menu, ArrowRight, LayoutDashboard, LogIn, LogOut } from 'lucide-react';
 import Logo from './Logo.jsx';
 import { NAV_LINKS } from '../data/content.js';
 import { useApp } from '../AppContext.jsx';
@@ -8,7 +8,11 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState('');
-  const { user, openDashboard, openAuth } = useApp();
+  const { user, openDashboard, openAuth, hasAccess: access, membershipLoaded, signOut } = useApp();
+  // Přihlášený bez členství nemá do klientské zóny → tlačítko vede na platbu.
+  // Dokud se členství načítá, ber ho jako člena (bez probliknutí „Aktivovat").
+  const hasAccess = access || !membershipLoaded;
+  const accountLabel = hasAccess ? 'Můj účet' : 'Aktivovat členství';
 
   // Změna pozadí navigace po odscrollování
   useEffect(() => {
@@ -67,12 +71,20 @@ export default function Navbar() {
 
         <div className="flex items-center gap-3">
           {user ? (
-            <button
-              onClick={openDashboard}
-              className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-ink-950 shadow-glow transition hover:brightness-110 hover:scale-[1.03] active:scale-95"
-            >
-              <LayoutDashboard className="w-4 h-4" /> Můj účet
-            </button>
+            <>
+              <button
+                onClick={openDashboard}
+                className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-ink-950 shadow-glow transition hover:brightness-110 hover:scale-[1.03] active:scale-95"
+              >
+                {hasAccess ? <LayoutDashboard className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />} {accountLabel}
+              </button>
+              {/* Bez členství se do administrace (kde je odhlášení) nedostane → odhlášení tady */}
+              {!hasAccess && (
+                <button onClick={signOut} aria-label="Odhlásit" title="Odhlásit" className="hidden sm:grid h-9 w-9 place-items-center rounded-xl border border-white/15 text-zinc-300 transition hover:text-white">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              )}
+            </>
           ) : (
             <>
               <button
@@ -117,8 +129,13 @@ export default function Navbar() {
             onClick={() => { setOpen(false); user ? openDashboard() : openAuth(); }}
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-2.5 font-semibold text-ink-950"
           >
-            {user ? <><LayoutDashboard className="w-4 h-4" /> Můj účet</> : <><LogIn className="w-4 h-4" /> Přihlásit / Registrovat</>}
+            {user ? <><LayoutDashboard className="w-4 h-4" /> {accountLabel}</> : <><LogIn className="w-4 h-4" /> Přihlásit / Registrovat</>}
           </button>
+          {user && !hasAccess && (
+            <button onClick={() => { setOpen(false); signOut(); }} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 py-2.5 font-semibold text-zinc-300">
+              <LogOut className="w-4 h-4" /> Odhlásit
+            </button>
+          )}
         </div>
       )}
     </header>

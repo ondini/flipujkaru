@@ -13,6 +13,8 @@ export function AppProvider({ children }) {
   const [member, setMember] = useState(null); // členství (Fáze C napojí na Stripe)
   const [user, setUser] = useState(null); // přihlášený uživatel (Supabase)
   const [isAdmin, setIsAdmin] = useState(false); // má účet roli admin?
+  const [membershipLoaded, setMembershipLoaded] = useState(!SUPABASE_READY); // členství přihlášeného účtu už načtené?
+  const [activationError, setActivationError] = useState(null); // sessionId zaplacené platby, jejíž aktivace selhala
   const [siteText, setSiteText] = useState({}); // editovatelné texty webu (z DB)
   const [authOpen, setAuthOpen] = useState(false); // okno přihlášení/registrace
   const [pendingPlan, setPendingPlan] = useState(null); // plán, který chtěl koupit před přihlášením
@@ -23,6 +25,7 @@ export function AppProvider({ children }) {
 
   // Načte členství uživatele z databáze (profiles). Jeden retry po krátké
   // prodlevě při chybě (přechodná síťová/RLS timing chyba), než se vzdá.
+  // Vrací, jestli má účet přístup do klientské zóny (aktivní členství / admin).
   const loadMembership = async (u, retry = true) => {
     try {
       const { data, error } = await supabase
@@ -36,12 +39,9 @@ export function AppProvider({ children }) {
       // chybějící sloupec (nespuštěná migrace) nerozbije načtení členství.
       supabase.from('profiles').select('stripe_checkout_session_id').eq('id', u.id).single()
         .then(({ data: d }) => { if (d?.stripe_checkout_session_id) setTelegramSession(d.stripe_checkout_session_id); });
-      if (data?.plan && data.subscription_status === 'active') {
-        const plan = PLANS.find((p) => p.name === data.plan);
-        setMember(plan ? { plan, email: u.email, renews: data.current_period_end } : null);
-      } else {
-        setMember(null);
-      }
+      const plan = data?.plan && data.subscription_status === 'active' ? PLANS.find((p) => p.name === data.plan) : null;
+      setMember(plan ? { plan, email: u.email, renews: data.current_period_end } : null);
+      return !!plan || data?.role === 'admin';
     } catch {
       if (retry) {
         await new Promise((r) => setTimeout(r, 800));
@@ -49,6 +49,7 @@ export function AppProvider({ children }) {
       }
       setMember(null);
       setIsAdmin(false);
+      return false;
     }
   };
 
@@ -69,8 +70,9 @@ export function AppProvider({ children }) {
     const apply = async (session) => {
       const u = session?.user ?? null;
       setUser(u);
-      if (u) await loadMembership(u);
+      if (u) { setMembershipLoaded(false); await loadMembership(u); }
       else { setMember(null); setIsAdmin(false); }
+      setMembershipLoaded(true);
     };
     // Callback NESMÍ čekat na další Supabase dotaz: supabase-js ho volá pod
     // auth zámkem a await na dotaz (ten si bere session = stejný zámek) zámek
@@ -102,15 +104,14 @@ export function AppProvider({ children }) {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'Aktivace selhala.');
       await loadMembership(session.user);
-    } catch {
-      // Záloha — použij uloženou volbu plánu
-      const pending = JSON.parse(localStorage.getItem('fk_pending') || 'null');
-      const plan = pending && PLANS.find((p) => p.name === pending.planName);
-      if (plan) setMember({ plan, email: pending.email });
-    } finally {
+      setActivationError(null);
       localStorage.removeItem('fk_pending');
       setView('dashboard');
       window.scrollTo(0, 0);
+    } catch {
+      // Žádné členství „na důvěru" z prohlížeče — přístup dává jen ověřená platba.
+      // Uživatel zůstane na webu s výzvou zkusit aktivaci znovu (ActivationError).
+      setActivationError(sessionId);
     }
   };
 
@@ -215,7 +216,7 @@ export function AppProvider({ children }) {
       return;
     }
     if (pendingPlan) { setCheckout(pendingPlan); setPendingPlan(null); }
-    else { setView('dashboard'); window.scrollTo(0, 0); }
+    else await openDashboard(); // bez zaplaceného členství → rovnou na platbu
   };
 
   // ---- Checkout ----
@@ -230,7 +231,39 @@ export function AppProvider({ children }) {
     window.scrollTo(0, 0);
   };
 
-  const openDashboard = () => { setView('dashboard'); window.scrollTo(0, 0); };
+  // Do klientské zóny jen s aktivním (zaplaceným) členstvím, nebo jako admin.
+  const hasAccess = !!member || isAdmin;
+  const startDefaultCheckout = () => setCheckout({ plan: PLANS[0], billing: DEFAULT_BILLING });
+  // Nečlen se přihlásil/registroval → nemá už zaplaceno? (pay-first, zavřená
+  // záložka před založením účtu). Nejdřív platba uložená v tomto prohlížeči
+  // (ověřitelná session), pak dohledání aktivního předplatného podle e-mailu.
+  const claimMembership = async (session) => {
+    const call = async (body) => {
+      try {
+        const res = await fetch('/api/activate-membership', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify(body),
+        });
+        return await res.json();
+      } catch { return {}; }
+    };
+    const stored = getPaidSession();
+    let data = stored ? await call({ sessionId: stored }) : {};
+    if (!data.ok) data = await call({});
+    if (!data.ok) return false;
+    if (data.sessionId) { setTelegramSession(data.sessionId); savePaidSession(data.sessionId); }
+    return loadMembership(session.user);
+  };
+
+  // Rozhoduje až nad čerstvě načteným členstvím — stav z onAuthStateChange
+  // se po přihlášení doplňuje se zpožděním a zaplacený člen by jinak skončil v pokladně.
+  const openDashboard = async () => {
+    const { data: { session } } = SUPABASE_READY ? await supabase.auth.getSession() : { data: { session: null } };
+    const access = session ? (await loadMembership(session.user)) || (await claimMembership(session)) : false;
+    if (!access) { startDefaultCheckout(); return; }
+    setView('dashboard'); window.scrollTo(0, 0);
+  };
   const backToSite = () => { setView('site'); window.scrollTo(0, 0); };
 
   return (
@@ -239,7 +272,7 @@ export function AppProvider({ children }) {
         view, checkout, member, user, isAdmin, authOpen, siteText, reloadContent,
         startCheckout, closeCheckout, completePurchase, activateAfterCheckout, handleCheckoutReturn,
         pendingStripeSession, justPaidSession, telegramSession, telegramLinked, dismissJustPaid: () => setJustPaidSession(null),
-        openDashboard, backToSite,
+        openDashboard, backToSite, hasAccess, membershipLoaded, startDefaultCheckout, activationError,
         signUp, signIn, signOut, resetPassword,
         openAuth, closeAuth, afterAuth,
       }}
