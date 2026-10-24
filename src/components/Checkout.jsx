@@ -20,6 +20,8 @@ export default function Checkout() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ email: '', name: '', card: '', exp: '', cvc: '' });
+  const [promoCode, setPromoCode] = useState(''); // slevový kód — uplatní se už při vytvoření platby
+  const [promoOpen, setPromoOpen] = useState(false);
   const [billing, setBilling] = useState(DEFAULT_BILLING); // délka členství — jde změnit i tady
 
   // Reset při otevření + zámek scrollu
@@ -30,6 +32,9 @@ export default function Checkout() {
       setProcessing(false);
       setError('');
       setBilling(checkout.billing || DEFAULT_BILLING); // předvol variantu z ceníku
+      // Kód z odkazu (?promo=…) předvyplníme
+      const urlPromo = new URLSearchParams(window.location.search).get('promo');
+      if (urlPromo) { setPromoCode(urlPromo.toUpperCase()); setPromoOpen(true); }
       setForm((f) => ({ ...f, email: user?.email || f.email })); // předvyplň e-mail účtu
       document.body.style.overflow = 'hidden';
     }
@@ -61,13 +66,13 @@ export default function Checkout() {
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: billing.priceId, email: form.email || undefined, planName: plan.name, billing: billing.id, userId: user?.id, tg: getTg() }),
+        body: JSON.stringify({ priceId: billing.priceId, email: form.email || undefined, planName: plan.name, billing: billing.id, userId: user?.id, tg: getTg(), promoCode: promoCode.trim() || undefined }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error(data.error || 'Nepodařilo se vytvořit platbu.');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) { setError(data.error || 'Nepodařilo se vytvořit platbu. Zkus to prosím znovu.'); setProcessing(false); return; }
       window.location.href = data.url; // → bezpečná stránka Stripe
-    } catch (e) {
-      setError(e.message + ' (Běží backend? Spusť `vercel dev`.)');
+    } catch {
+      setError('Platbu se nepodařilo spustit — zkontroluj připojení a zkus to znovu.');
       setProcessing(false);
     }
   };
@@ -157,6 +162,15 @@ export default function Checkout() {
               {/* E-mail (předvyplní se na Stripe) */}
               <div className="mt-4">
                 <Field label="E-mail" value={form.email} onChange={set('email')} placeholder="tvuj@email.cz" type="email" />
+              </div>
+
+              {/* Slevový kód — uplatníme ho při vytvoření platby (na stránce Stripe ho pak uvidíš odečtený) */}
+              <div className="mt-3">
+                {promoOpen ? (
+                  <Field label="Slevový kód" value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="KÓD" autoComplete="off" />
+                ) : (
+                  <button type="button" onClick={() => setPromoOpen(true)} className="text-sm font-medium text-accent hover:underline">Mám slevový kód</button>
+                )}
               </div>
 
               {error && (
