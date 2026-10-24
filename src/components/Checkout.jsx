@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { X, CreditCard, Landmark, ShieldCheck, Lock, Check, Loader2, Apple, AlertCircle } from 'lucide-react';
 import { useApp } from '../AppContext.jsx';
 import { czk } from '../data/content.js';
-import { STRIPE_READY, DEFAULT_BILLING } from '../config/billing.js';
+import { STRIPE_READY, DEFAULT_BILLING, BILLING_OPTIONS, perMonth } from '../config/billing.js';
 import { getTg } from '../lib/telegram.js';
 
 const STEPS = ['Souhrn', 'Platba', 'Hotovo'];
+const MONTHLY_RATE = perMonth(BILLING_OPTIONS.find((o) => o.id === 'monthly') || BILLING_OPTIONS[0]);
+const savePct = (o) => Math.max(0, Math.round((1 - perMonth(o) / MONTHLY_RATE) * 100));
 
 /** Pomocné formátování vstupů karty */
 const fmtCard = (v) => v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
@@ -18,6 +20,7 @@ export default function Checkout() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ email: '', name: '', card: '', exp: '', cvc: '' });
+  const [billing, setBilling] = useState(DEFAULT_BILLING); // délka členství — jde změnit i tady
 
   // Reset při otevření + zámek scrollu
   useEffect(() => {
@@ -26,6 +29,7 @@ export default function Checkout() {
       setMethod('card');
       setProcessing(false);
       setError('');
+      setBilling(checkout.billing || DEFAULT_BILLING); // předvol variantu z ceníku
       setForm((f) => ({ ...f, email: user?.email || f.email })); // předvyplň e-mail účtu
       document.body.style.overflow = 'hidden';
     }
@@ -33,7 +37,7 @@ export default function Checkout() {
   }, [checkout]);
 
   if (!checkout) return null;
-  const { plan, billing = DEFAULT_BILLING } = checkout;
+  const { plan } = checkout;
   const total = billing.price;
   const period = billing.period;
 
@@ -111,7 +115,27 @@ export default function Checkout() {
                     <div className="font-display text-lg font-bold text-white">Plán {plan.name}</div>
                     <div className="text-sm text-zinc-400">{plan.tagline}</div>
                   </div>
-                  <span className="rounded-lg bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent">{billing.label}</span>
+                </div>
+                {/* Délka členství — stejný přepínač jako v ceníku */}
+                <div className="mt-4 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/10 bg-ink-950 p-1.5" role="radiogroup" aria-label="Délka členství">
+                  {BILLING_OPTIONS.map((o) => {
+                    const active = o.id === billing.id;
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setBilling(o)}
+                        className={`rounded-xl px-2 py-2 text-center text-sm font-semibold transition ${active ? 'bg-accent text-ink-950 shadow-glow' : 'text-zinc-300 hover:text-white'}`}
+                      >
+                        {o.label}
+                        <span className={`mt-0.5 block whitespace-nowrap text-[11px] font-medium ${active ? 'text-ink-950/70' : 'text-zinc-500'}`}>{czk(o.price)}</span>
+                        {/* Řádek se slevou i u měsíční varianty (prázdný) — stejná výška tlačítek */}
+                        <span className={`block text-[10px] font-bold ${active ? 'text-ink-950/70' : 'text-accent'}`}>{savePct(o) > 0 ? `−${savePct(o)} %` : '\u00a0'}</span>
+                      </button>
+                    );
+                  })}
                 </div>
                 <ul className="mt-4 space-y-2 border-t border-white/5 pt-4 text-sm">
                   {plan.features.slice(0, 4).map((f) => (

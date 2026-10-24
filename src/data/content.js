@@ -294,7 +294,7 @@ export const CATEGORY_LABEL = { sportovni: 'Sportovní', investicni: 'Investičn
 /** Výhody akademie (icon = název Lucide ikony) */
 export const BENEFITS = [
   { icon: 'Database', title: 'Rozhodnutí podle dat', text: 'Reálné prodejní ceny, poptávka a historie modelů. Víš dopředu, co koupit a za kolik to prodáš.' },
-  { icon: 'Users', title: 'Komunita, co táhne', text: 'Uzavřený Discord, kde se denně sdílí dealy, kontakty i chyby. V tom nejsi nikdy sám.' },
+  { icon: 'Users', title: 'Komunita, co táhne', text: 'Uzavřená Telegram skupina, kde se denně sdílí dealy, kontakty i chyby. V tom nejsi nikdy sám.' },
   { icon: 'Compass', title: 'Vedení krok za krokem', text: 'Od prvního inzerátu až po prodej. Provedeme tě celým flipem, abys neudělal drahou chybu.' },
   { icon: 'ShieldCheck', title: 'Právně bez starostí', text: 'Smlouvy, daně, DPH i reklamace. Flipuj s jistotou, ne s obavami z papírů.' },
 ];
@@ -345,7 +345,7 @@ export const PLANS = [
       'Kompletní know-how car flippingu od A do Z',
       'Každý týden seznam aut napříč Evropou pod tržní cenou',
       'Kalkulačka zisku, marže a ROI',
-      'Přístup do uzavřené Discord komunity',
+      'Přístup do uzavřené Telegram skupiny členů',
       'Knihovna smluv, šablon a daňových postupů',
       'Měsíční živé Q&A s týmem',
       'Kompletní asistence s celým flipem, aby byl úspěšný',
