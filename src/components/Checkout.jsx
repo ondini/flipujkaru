@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, CreditCard, Landmark, ShieldCheck, Lock, Check, Loader2, Apple, AlertCircle } from 'lucide-react';
 import { useApp } from '../AppContext.jsx';
 import { czk } from '../data/content.js';
-import { STRIPE_READY, DEFAULT_BILLING, BILLING_OPTIONS, perMonth } from '../config/billing.js';
+import { STRIPE_READY, DEFAULT_BILLING, BILLING_OPTIONS, perMonth, campaignFromText, discountedPrice } from '../config/billing.js';
 import { getTg } from '../lib/telegram.js';
 import { supabase } from '../lib/supabase.js';
 
@@ -12,10 +12,12 @@ const savePct = (o) => Math.max(0, Math.round((1 - perMonth(o) / MONTHLY_RATE) *
 
 /** Pomocné formátování vstupů karty */
 const fmtCard = (v) => v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
+/** Kč i s haléři, když nějaké jsou (cena po slevě, např. 424,15 Kč). */
+const czk2 = (n) => new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 2 }).format(n) + ' Kč';
 const fmtExp = (v) => v.replace(/\D/g, '').slice(0, 4).replace(/(.{2})(.+)/, '$1/$2');
 
 export default function Checkout() {
-  const { checkout, closeCheckout, completePurchase, user } = useApp();
+  const { checkout, closeCheckout, completePurchase, user, siteText } = useApp();
   const [step, setStep] = useState(0);
   const [method, setMethod] = useState('card');
   const [processing, setProcessing] = useState(false);
@@ -48,7 +50,12 @@ export default function Checkout() {
   const { plan } = checkout;
   const total = billing.price;
   const period = billing.period;
-  const trial = billing.trialDays > 0; // měsíční varianta: první měsíc zdarma
+  // Kampaň (přepínače v administraci). Skutečný nárok ověří server — jen noví členové.
+  const campaign = campaignFromText(siteText);
+  const trial = campaign.trial;
+  const hasPromo = promoCode.trim() !== '';
+  const pct = campaign.discount && !hasPromo ? billing.campaignPct || 0 : 0; // slevový kód úvodní slevu nahrazuje
+  const firstPaid = pct ? discountedPrice(billing) : total;
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const cardValid = method !== 'card' || (form.email.includes('@') && form.card.replace(/\s/g, '').length === 16 && form.exp.length === 5 && form.cvc.length >= 3);
@@ -163,20 +170,32 @@ export default function Checkout() {
                 {trial ? (
                   <>
                     <div className="flex justify-between text-zinc-400"><span>První měsíc</span><span className="font-semibold text-accent">Zdarma</span></div>
-                    <div className="flex justify-between text-zinc-400"><span>Od 2. měsíce</span><span>{czk(total)} / {period}</span></div>
+                    {pct > 0 && (
+                      <div className="flex justify-between text-zinc-400">
+                        <span>Pak {billing.months === 1 ? '2. měsíc' : `první ${period}`} <span className="font-semibold text-accent">−{pct} %</span></span>
+                        <span><s className="mr-1.5 text-zinc-600">{czk(total)}</s>{czk2(firstPaid)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-zinc-400"><span>{pct > 0 ? 'Dál' : 'Po měsíci zdarma'}</span><span>{czk(total)} / {period}</span></div>
                     <div className="flex justify-between border-t border-white/5 pt-2 font-display text-lg font-bold text-white">
                       <span>Dnes zaplatíš</span><span>{czk(0)}</span>
                     </div>
-                    <p className="text-xs text-zinc-500">Vč. DPH. Kartu zadáš teď, první platba {czk(total)} se strhne automaticky po 30 dnech a dál každý měsíc. Zrušíš kdykoli. Měsíc zdarma platí pro nové členy.</p>
+                    <p className="text-xs text-zinc-500">Vč. DPH. Kartu zadáš teď, první platba {czk2(firstPaid)} se strhne automaticky po 30 dnech{pct > 0 ? `, další už v plné výši ${czk(total)}` : ''} ({billing.note.toLowerCase()}). Zrušíš kdykoli. Nabídka platí pro nové členy.</p>
                   </>
                 ) : (
                   <>
                     <div className="flex justify-between text-zinc-400"><span>Cena za {period}</span><span>{czk(total)}</span></div>
+                    {pct > 0 && (
+                      <div className="flex justify-between text-zinc-400"><span>Úvodní sleva na první {period}</span><span className="font-semibold text-accent">−{pct} %</span></div>
+                    )}
                     <div className="flex justify-between border-t border-white/5 pt-2 font-display text-lg font-bold text-white">
-                      <span>Celkem</span><span>{czk(total)}</span>
+                      <span>Celkem</span><span>{czk2(firstPaid)}</span>
                     </div>
-                    <p className="text-xs text-zinc-500">Vč. DPH. {billing.note}, zrušíš kdykoli.</p>
+                    <p className="text-xs text-zinc-500">Vč. DPH. {billing.note}{pct > 0 ? `, další platby v plné výši ${czk(total)}` : ''}, zrušíš kdykoli.{pct > 0 ? ' Sleva platí pro nové členy.' : ''}</p>
                   </>
+                )}
+                {campaign.discount && hasPromo && (
+                  <p className="text-xs text-zinc-500">Slevový kód nahrazuje úvodní slevu — uplatní se jen kód.</p>
                 )}
               </div>
 

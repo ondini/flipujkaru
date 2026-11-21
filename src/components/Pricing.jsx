@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Lock, Undo2, XCircle } from 'lucide-react';
 import { PLANS, czk } from '../data/content.js';
-import { BILLING_OPTIONS, DEFAULT_BILLING, perMonth } from '../config/billing.js';
+import { BILLING_OPTIONS, DEFAULT_BILLING, perMonth, campaignFromText, discountedPrice } from '../config/billing.js';
 import { useApp } from '../AppContext.jsx';
 import Reveal from './Reveal.jsx';
 
@@ -42,8 +42,10 @@ function FeatureCheck({ label, index, strong }) {
 
 /** Cenová karta — jedno členství, tři varianty podle frekvence platby. */
 function PlanCard({ plan }) {
-  const { startCheckout } = useApp();
+  const { startCheckout, siteText } = useApp();
   const [billing, setBilling] = useState(DEFAULT_BILLING);
+  const campaign = campaignFromText(siteText);
+  const pct = campaign.discount ? billing.campaignPct || 0 : 0;
 
   return (
     <div className="grad-border relative mx-auto w-full max-w-md rounded-3xl p-8 shadow-glow">
@@ -84,9 +86,11 @@ function PlanCard({ plan }) {
       <p className="mt-1 text-xs text-zinc-500">
         {billing.months > 1 ? `${czk(perMonth(billing))} / měsíc · ${billing.note}` : billing.note}
       </p>
-      {billing.trialDays > 0 && (
+      {(campaign.trial || pct > 0) && (
         <p className="mt-2 inline-flex rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
-          První měsíc zdarma — platíš až od 2. měsíce
+          {campaign.trial && pct > 0 && `První měsíc zdarma, pak ${billing.months === 1 ? '2. měsíc' : `první ${billing.period}`} za ${new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 2 }).format(discountedPrice(billing))} Kč (−${pct} %)`}
+          {campaign.trial && !pct && 'První měsíc zdarma — platíš až po 30 dnech'}
+          {!campaign.trial && pct > 0 && `Úvodní sleva −${pct} % na první ${billing.period}`}
         </p>
       )}
 

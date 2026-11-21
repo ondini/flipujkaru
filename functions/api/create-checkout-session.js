@@ -1,10 +1,7 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { json } from '../_utils.js';
-
-/** Zkušební měsíc zdarma — jen u MĚSÍČNÍ varianty (interval month, count 1). */
-const TRIAL_DAYS = 30;
-const isMonthly = (price) => price?.recurring?.interval === 'month' && (price.recurring.interval_count || 1) === 1;
+import { TRIAL_DAYS, readCampaign, campaignPct, ensureCoupon } from '../_campaign.js';
 
 /** Měl už tenhle e-mail u nás někdy předplatné? (zkušební měsíc jen jednou na osobu) */
 async function hadSubscription(stripe, email) {
@@ -64,10 +61,16 @@ export async function onRequestPost({ request, env }) {
     // Doklad o souhlasu s podmínkami (čas odeslání objednávky).
     meta.termsAcceptedAt = new Date().toISOString();
 
-    // Zkušební měsíc zdarma: rozhoduje server podle ceny (ne prohlížeč) a jen
-    // pro e-mail, který u nás ještě předplatné neměl.
+    // Kampaň (přepínače v administraci): měsíc zdarma u všech délek členství
+    // a sleva na první placené období. Rozhoduje server, ne prohlížeč; obojí
+    // jen pro e-mail, který u nás ještě předplatné neměl.
     const price = await stripe.prices.retrieve(priceId);
-    const trial = isMonthly(price) && !(await hadSubscription(stripe, email));
+    const campaign = await readCampaign(admin);
+    const firstTime = (campaign.trial || campaign.discount) && !(await hadSubscription(stripe, email));
+    const trial = campaign.trial && firstTime;
+    // Slevový kód zadaný zákazníkem úvodní slevu NAHRAZUJE (nesčítají se).
+    const hasPromo = typeof promoCode === 'string' && promoCode.trim() !== '';
+    const pct = campaign.discount && firstTime && !hasPromo ? campaignPct(price) : 0;
 
     // Slevový kód zadaný v naší pokladně → uplatníme ho rovnou při vytvoření session.
     // (Pole pro kód na stránce Stripe v live režimu kódy odmítá jako neplatné,
@@ -78,7 +81,13 @@ export async function onRequestPost({ request, env }) {
       const { data } = await stripe.promotionCodes.list({ code, active: true, limit: 1 });
       if (!data.length) return json({ error: 'Neplatný nebo vypršelý slevový kód.', field: 'promoCode' }, 400);
       discounts = [{ promotion_code: data[0].id }];
+    } else if (pct && !trial) {
+      // Bez zkušební doby je první placená faktura hned ta první → kupón rovnou do pokladny.
+      discounts = [{ coupon: await ensureCoupon(stripe, pct) }];
     }
+    // Se zkušební dobou kupón přidá webhook (checkout.session.completed) až k
+    // vytvořenému předplatnému, aby nepadl na 0 Kč fakturu zkušební doby.
+    const subMeta = pct && trial ? { ...meta, campaignPct: String(pct) } : meta;
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription', // opakované předplatné
@@ -91,7 +100,7 @@ export async function onRequestPost({ request, env }) {
       // Karta se zadává vždy (i při 0 Kč ve zkušebním měsíci) — po jeho konci se z ní strhne první platba.
       payment_method_collection: 'always',
       subscription_data: {
-        metadata: meta,
+        metadata: subMeta,
         ...(trial ? {
           trial_period_days: TRIAL_DAYS,
           // Bez platební metody na konci zkušební doby předplatné zruš (neposílej nezaplacenou fakturu).
@@ -103,7 +112,7 @@ export async function onRequestPost({ request, env }) {
       locale: 'cs',
     });
 
-    return json({ url: session.url, trial });
+    return json({ url: session.url, trial, discountPct: pct });
   } catch (err) {
     // Kód existuje, ale nejde uplatnit (vyčerpaný, po platnosti, jiný produkt…)
     if (String(err.param || '').startsWith('discounts')) {

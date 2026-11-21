@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { json } from '../_utils.js';
+import { applyCampaignDiscount } from '../_campaign.js';
 
 /**
  * Cloudflare Pages Function: Stripe webhook.
@@ -78,6 +79,14 @@ export async function onRequestPost({ request, env }) {
           .eq('id', userId));
         // Pro „Propojit Telegram" — best-effort, chybějící sloupec nesmí vyvolat retry.
         await admin.from('profiles').update({ stripe_checkout_session_id: session.id }).eq('id', userId);
+        // Kampaň: sleva na první placené období po měsíci zdarma (chyba → 500 → Stripe zopakuje).
+        if (sub) await applyCampaignDiscount(stripe, sub);
+        break;
+      }
+
+      // Záloha: 3 dny před koncem zkušební doby (jen pokud je událost u webhooku zapnutá).
+      case 'customer.subscription.trial_will_end': {
+        await applyCampaignDiscount(stripe, event.data.object.id); // čerstvý stav (idempotence)
         break;
       }
 

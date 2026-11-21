@@ -11,9 +11,10 @@
      • 1 měsíc   → interval = month, count 1   →   499 Kč (první měsíc zdarma)
      • 4 měsíce  → interval = month, count 4   → 1 599 Kč
      • 12 měsíců → interval = year  (nebo month×12) → 3 999 Kč
-   Zkušební měsíc zdarma u měsíční varianty NENÍ nastavený na Price ve Stripe —
-   přidává ho server (functions/api/create-checkout-session.js, TRIAL_DAYS)
-   podle intervalu ceny. `trialDays` níže slouží jen pro texty v UI.
+   Kampaň (měsíc zdarma u všech variant + sleva na první placené období)
+   NENÍ nastavená na Price ve Stripe — řídí ji server (functions/_campaign.js)
+   podle přepínačů v administraci (Nastavení → Kampaň, tabulka `content`).
+   `campaignPct` níže slouží jen pro texty v UI; skutečnou slevu určuje server.
    POZOR: Price ID níže jsou ještě STARÉ ceny (1 990 / 5 990 / 14 990 Kč).
    Po vytvoření nových cen ve Stripe je nahraď (nebo nastav GitHub
    Variables VITE_STRIPE_PRICE_* v repozitáři — přebijí je při buildu).
@@ -34,7 +35,7 @@ export const BILLING_OPTIONS = [
     price: 499,
     period: 'měsíc',
     note: 'Účtováno každý měsíc',
-    trialDays: 30, // první měsíc zdarma (uplatní server, viz výše)
+    campaignPct: 15, // úvodní sleva na první placené období (jen texty, viz výše)
     priceId: env.VITE_STRIPE_PRICE_MONTHLY || 'price_1ULUavCMiFqAOCKZxJt0KSrc',
   },
   {
@@ -45,6 +46,7 @@ export const BILLING_OPTIONS = [
     period: '4 měsíce',
     note: 'Účtováno každé 4 měsíce',
     badge: 'Oblíbené',
+    campaignPct: 20,
     priceId: env.VITE_STRIPE_PRICE_QUARTERLY || 'price_1ULUhYCMiFqAOCKZcUExFBBn',
   },
   {
@@ -55,6 +57,7 @@ export const BILLING_OPTIONS = [
     period: 'rok',
     note: 'Účtováno ročně',
     badge: 'Nejvýhodnější',
+    campaignPct: 25,
     priceId: env.VITE_STRIPE_PRICE_YEARLY || 'price_1ULUhXCMiFqAOCKZLappdPMn',
   },
 ];
@@ -74,3 +77,12 @@ export const billingById = (id) =>
 export const STRIPE_READY = !BILLING_OPTIONS.some((o) =>
   o.priceId.startsWith('price_REPLACE')
 );
+
+/** Přepínače kampaně z editovatelného obsahu webu (stejné výchozí hodnoty jako server). */
+export const campaignFromText = (t = {}) => ({
+  trial: t.promo_trial !== 'off',
+  discount: t.promo_discount === 'on',
+});
+
+/** Cena po úvodní slevě (Kč, na haléře — tak ji spočítá i Stripe). */
+export const discountedPrice = (o) => Math.round(o.price * (100 - (o.campaignPct || 0))) / 100;

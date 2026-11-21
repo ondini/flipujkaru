@@ -15,6 +15,7 @@ import { DASH_NAV } from '../data/member.js';
 import { LogoMark } from './Logo.jsx';
 import { telegramLink } from '../lib/telegram.js';
 import CourseRow from './dashboard/CourseRow.jsx';
+import CampaignSettings from './dashboard/CampaignSettings.jsx';
 
 // Panely → lazy, načtou se až po kliknutí na danou záložku
 const AdminCars = lazy(() => import('./AdminCars.jsx'));
@@ -781,6 +782,9 @@ function SettingsPanel({ user, planName, paidUntil, isAdmin, signOut, setTab }) 
           )}
         </div>
       </div>
+
+      {/* Kampaň — přepínače měsíce zdarma a úvodní slevy (jen admin) */}
+      {isAdmin && <CampaignSettings />}
 
       {/* Členství */}
       <div className="rounded-2xl border border-white/10 bg-ink-850 p-5">

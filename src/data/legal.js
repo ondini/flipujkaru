@@ -25,9 +25,9 @@ export const OBCHODNI_PODMINKY = {
     {
       title: '2. Členství, zkušební období a aktivace',
       blocks: [
-        { p: '2.1. Členství je poskytováno formou předplatného. U měsíčního balíčku je první kalendářní měsíc (30 dní) od aktivace poskytován zdarma (zkušební období). Zkušební období lze využít pouze jednou.' },
+        { p: '2.1. Členství je poskytováno formou předplatného. Nabízí-li Poskytovatel v době objednávky zkušební období, je první kalendářní měsíc (30 dní) od Aktivace poskytován zdarma (dále jen „zkušební období"). Zda je zkušební období nabízeno, je uvedeno na webu www.flipujkaru.cz a v souhrnu objednávky. Zkušební období lze využít pouze jednou.' },
         { p: '2.2. Aktivací se rozumí okamžik, kdy Člen úspěšně zadá údaje své platební karty v objednávkovém procesu a potvrdí objednávku (dále jen „Aktivace"). Od tohoto okamžiku má Člen přístup ke Službě.' },
-        { p: '2.3. Po uplynutí zkušebního období se členství automaticky mění na placené. Členství pokračuje na dobu neurčitou a členský poplatek se strhává automaticky v intervalu zvoleného balíčku (měsíčně, jednou za 4 měsíce nebo jednou za 12 měsíců), dokud není vypovězeno v souladu s čl. 6. U balíčků na 4 a 12 měsíců se zkušební období neuplatňuje a první členský poplatek se strhává při Aktivaci.' },
+        { p: '2.3. Po uplynutí zkušebního období (není-li nabízeno, od Aktivace) je členství placené. Členství pokračuje na dobu neurčitou a členský poplatek se strhává automaticky v intervalu zvoleného balíčku (měsíčně, jednou za 4 měsíce nebo jednou za 12 měsíců), dokud není vypovězeno v souladu s čl. 6.' },
         { p: '2.4. Výše členského poplatku se řídí aktuálním ceníkem a zvoleným balíčkem členství zveřejněným na www.flipujkaru.cz ke dni objednávky. Poskytovatel si vyhrazuje právo ceník měnit; změna se na již aktivní členství uplatní nejdříve od následujícího fakturačního období a Člen o ní bude předem informován.' },
         { p: '2.5. Členství je vázáno na konkrétní osobu (Člena) a není bez předchozího písemného souhlasu Poskytovatele převoditelné na třetí osobu.' },
       ],
@@ -63,13 +63,13 @@ export const OBCHODNI_PODMINKY = {
           'inzeroval vozidlo na méně než 3 inzertních portálech současně,',
           'porušil tyto Podmínky nebo etický kodex komunity Flipuj Káru.',
         ] },
-        { p: '4.5. Garance dle tohoto článku je jednorázová a vztahuje se pouze na první členský poplatek skutečně uhrazený (zaplacený) Členem; zkušební měsíc zdarma se do garance nepočítá jako uhrazený poplatek. Garance se nevztahuje na případná prodloužení či opakované platby členství.' },
+        { p: '4.5. Garance dle tohoto článku je jednorázová a vztahuje se pouze na první členský poplatek skutečně uhrazený (zaplacený) Členem; zkušební měsíc zdarma se do garance nepočítá jako uhrazený poplatek. Byl-li první placený poplatek snížen úvodní slevou nebo slevovým kódem, vrací se skutečně zaplacená částka. Garance se nevztahuje na případná prodloužení či opakované platby členství.' },
       ],
     },
     {
       title: '5. Cena a platební podmínky',
       blocks: [
-        { p: '5.1. U měsíčního balíčku je zkušební období (první měsíc) poskytováno zdarma. Od začátku druhého měsíce a dále se každý měsíc automaticky strhává členský poplatek ve výši dle aktuálního ceníku. U balíčků na 4 a 12 měsíců se členský poplatek strhává při Aktivaci a poté automaticky na začátku každého dalšího fakturačního období.' },
+        { p: '5.1. Je-li nabízeno zkušební období, je první měsíc poskytován zdarma a první členský poplatek se strhává po jeho uplynutí; jinak se první členský poplatek strhává při Aktivaci. Poté se členský poplatek strhává automaticky na začátku každého dalšího fakturačního období zvoleného balíčku ve výši dle aktuálního ceníku. Nabízí-li Poskytovatel v době objednávky úvodní slevu, uplatní se jednorázově na první placené období zvoleného balíčku ve výši uvedené na webu a v souhrnu objednávky (měsíční balíček 15 %, balíček na 4 měsíce 20 %, balíček na 12 měsíců 25 %); další období se hradí v plné výši. Úvodní slevu nelze kombinovat se slevovým kódem — zadá-li Člen slevový kód, uplatní se pouze slevový kód. Úvodní slevu lze využít pouze jednou.' },
         { p: '5.2. Stržení platby za následující období probíhá automaticky z platební karty, kterou Člen zadal při objednávce, a to v den začátku dalšího fakturačního období.' },
         { p: '5.3. Člen výslovně souhlasí s uložením údajů platební karty u platebního poskytovatele a s automatickým strháváním opakujících se plateb.' },
         { p: '5.4. Poskytovatel vystaví Členovi daňový doklad za každé uhrazené období a zašle jej na e-mailovou adresu uvedenou v objednávce.' },
