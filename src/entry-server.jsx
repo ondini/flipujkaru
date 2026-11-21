@@ -21,12 +21,11 @@ const sellFaq = (t) => SELL_FAQ.map((f) => ({ q: f.q, a: (t[f.key] || f.fallback
 function structuredData(key, siteText) {
   const org = organizationLd();
   switch (key) {
-    case '/': return [org, websiteLd(), faqLd([...FAQ, ...sellFaq(siteText)])];
+    case '/': return [org, websiteLd(), faqLd(sellFaq(siteText))]; // na úvodu je jen sekce prodeje auta s dotazy
     case '/prodej-auta': return [org, sellServiceLd(), faqLd(sellFaq(siteText))];
     case '/prodej-auta/formular': return [org, sellServiceLd()];
     case '/akademie': return [org, courseLd()];
     case '/cenik': return [org, membershipLd(BILLING_OPTIONS), faqLd(FAQ)];
-    case '/faq': return [org, faqLd(FAQ)];
     default: return [org];
   }
 }

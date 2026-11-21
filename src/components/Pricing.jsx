@@ -115,7 +115,7 @@ export default function Pricing() {
   const plan = PLANS[0];
 
   return (
-    <section id="cenik" className="relative py-20 md:py-28">
+    <section id="cenik" className="relative scroll-mt-16 py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">{t.price_eyebrow || 'Členství'}</span>

@@ -317,32 +317,31 @@ export const PLANS = [
     ] },
 ];
 
-/** Časté dotazy */
-export const FAQ = [
-  { q: 'Je car flipping legální? Nepohybuju se v šedé zóně?', a: 'Je to standardní podnikání — nákup a prodej movité věci. Vše vedeme transparentně a podle legislativy: ke každému vozu kupní smlouva, faktura, řádně řešené DPH a přepis. V akademii tě provedeme i daňovou stránkou, abys měl od první koruny papíry v pořádku.' },
-  { q: 'Jaké je reálné riziko, že prodělám?', a: 'Riziko nikdy není nulové — a kdo tvrdí opak, lže. Naším úkolem je ho systematicky minimalizovat: pracujeme s reálnými tržními daty, počítáme zisk i rezervu předem v kalkulačce ROI a kupujeme jen vozy s prověřeným stavem a historií. Neprodáváme sny, ale postup, který drží riziko pod kontrolou.' },
-  { q: 'Jak poznám, že auta z vašeho bazaru nejsou skryté vraky?', a: 'Každý vůz prochází technickou prohlídkou, ověřením původu a stavu km a kontrolou právního stavu (zástavy, leasing, odcizení). Ke každému autu dostaneš kompletní reporty — nic neskrýváme. Co nevíme jistě, do inzerátu nepíšeme.' },
-  { q: 'Slibujete garantovaný výdělek?', a: 'Ne. Garantovaný výdělek neexistuje a takové sliby jsou varovný signál. Garantujeme nástroje, data a postupy, které dělají rozdíl mezi hádáním a informovaným rozhodnutím. Výsledek závisí na trhu a na tobě — my ti dáme maximální náskok.' },
-  { q: 'Potřebuju velký kapitál nebo zkušenosti s auty?', a: 'Ne. Většina členů začíná s autem za 80–150 tisíc a bez technického vzdělání. Naučíme tě pracovat s tím, co máš, opřít se o síť prověřených mechaniků a růst postupně.' },
-  { q: 'Jste jen další online kurz?', a: 'Nejsme. Stojíme na vlastním softwaru (algoritmus skenující inzeráty napříč Evropou, kalkulačky), fyzickém skladu prověřených aut a síti partnerů. Akademie je jen jedna část — ne celý byznys.' },
-  { q: 'Co se děje s mými penězi a daty?', a: 'Platby zpracovává zabezpečená brána Stripe, karty u nás nikdy neukládáme. Osobní údaje chráníme dle GDPR. Žádné skryté poplatky — ceny jsou uvedené včetně DPH.' },
+/** Časté dotazy — po tématech (stránka Členství, /cenik#faq). */
+export const FAQ_GROUPS = [
+  { id: 'clenstvi', title: 'Členství a platby', items: [
+    { q: 'Jak funguje první měsíc zdarma?', a: 'Když nabídka měsíce zdarma právě běží (uvidíš ji v ceníku i v souhrnu objednávky), prvních 30 dní neplatíš nic. Kartu zadáš při objednávce a první platba se strhne automaticky až po 30 dnech. Nabídka platí jen pro nové členy a jen jednou.' },
+    { q: 'Můžu členství kdykoli zrušit?', a: 'Ano, kdykoli. Předplatné zrušíš sám v klientské zóně (Nastavení → Spravovat předplatné) nebo e-mailem. Členství pak doběhne do konce už zaplaceného období (u měsíce zdarma do jeho konce) a nic dalšího se nestrhne. Aby se zrušení týkalo už další platby, udělej ho nejpozději 3 pracovní dny před ní.' },
+    { q: 'Co všechno je v členství?', a: 'Kompletní know-how car flippingu, scanner aut pod tržní cenou napříč Evropou, kalkulačka zisku, uzavřená Telegram komunita, knihovna smluv a šablon, živá Q&A s týmem a provize za doporučené pojištění a financování. Osobní 1:1 servis je samostatná placená služba nad rámec členství.' },
+    { q: 'Co když se mi nepodaří první flip?', a: 'Máme garanci vrácení peněz: když do 60 dnů od aktivace neuděláš svůj první flip a přitom splníš podmínky z čl. 4 obchodních podmínek, vrátíme ti první zaplacený členský poplatek.' },
+    { q: 'Kde najdu faktury?', a: 'Doklad o každé platbě ti přijde e-mailem a všechny faktury si stáhneš v klientské zóně v záložce Faktury. Tam taky změníš platební kartu.' },
+    { q: 'Jak se zapojím do komunity?', a: 'Hned po aktivaci najdeš v klientské zóně tlačítko „Propojit Telegram“, přes které se dostaneš do uzavřené skupiny členů.' },
+  ] },
+  { id: 'flipovani', title: 'Flipování a riziko', items: [
+    { q: 'Je car flipping legální? Nepohybuju se v šedé zóně?', a: 'Je to standardní podnikání — nákup a prodej movité věci. Vše vedeme transparentně a podle legislativy: ke každému vozu kupní smlouva, faktura, řádně řešené DPH a přepis. V akademii tě provedeme i daňovou stránkou, abys měl od první koruny papíry v pořádku.' },
+    { q: 'Jaké je reálné riziko, že prodělám?', a: 'Riziko nikdy není nulové — a kdo tvrdí opak, lže. Naším úkolem je ho systematicky minimalizovat: pracujeme s reálnými tržními daty, počítáme zisk i rezervu předem v kalkulačce ROI a kupujeme jen vozy s prověřeným stavem a historií. Neprodáváme sny, ale postup, který drží riziko pod kontrolou.' },
+    { q: 'Slibujete garantovaný výdělek?', a: 'Ne. Garantovaný výdělek neexistuje a takové sliby jsou varovný signál. Garantujeme nástroje, data a postupy, které dělají rozdíl mezi hádáním a informovaným rozhodnutím. Výsledek závisí na trhu a na tobě — my ti dáme maximální náskok.' },
+    { q: 'Potřebuju velký kapitál nebo zkušenosti s auty?', a: 'Ne. Většina členů začíná s autem za 80–150 tisíc a bez technického vzdělání. Naučíme tě pracovat s tím, co máš, opřít se o síť prověřených mechaniků a růst postupně.' },
+    { q: 'Jste jen další online kurz?', a: 'Nejsme. Stojíme na vlastním softwaru (algoritmus skenující inzeráty napříč Evropou, kalkulačky), fyzickém skladu prověřených aut a síti partnerů. Akademie je jen jedna část — ne celý byznys.' },
+  ] },
+  { id: 'bazar', title: 'Bazar, platby a data', items: [
+    { q: 'Jak poznám, že auta z vašeho bazaru nejsou skryté vraky?', a: 'Každý vůz prochází technickou prohlídkou, ověřením původu a stavu km a kontrolou právního stavu (zástavy, leasing, odcizení). Ke každému autu dostaneš kompletní reporty — nic neskrýváme. Co nevíme jistě, do inzerátu nepíšeme.' },
+    { q: 'Co se děje s mými penězi a daty?', a: 'Platby zpracovává zabezpečená brána Stripe, karty u nás nikdy neukládáme. Osobní údaje chráníme dle GDPR. Žádné skryté poplatky — ceny jsou uvedené včetně DPH.' },
+  ] },
 ];
 
-/** „Proč právě my?" — konkurenční výhody. highlight = vlajková loď (algoritmus) */
-export const WHY_US = [
-  {
-    icon: 'Radar', highlight: true,
-    title: 'Vlastní algoritmus skenuje celou Evropu',
-    text: 'Náš software hlídá inzeráty v Německu, Rakousku, Itálii i ČR podle tvých parametrů. Sotva se objeví auto pod cenou, máme notifikaci — a voláme jako první, často pár minut po vyvěšení. Než ostatní stihnou scrollovat, my už jednáme.',
-  },
-  { icon: 'LineChart', title: 'Trh známe nazpaměť', text: 'Roky praxe a analýza tuzemského i zahraničního trhu. Víme, co se kdy prodá — značka, motorizace, sezóna. Nehádáme, počítáme.' },
-  { icon: 'PiggyBank', title: 'Neplatíš provizi, vyděláváš ji', text: '99 % autosalonů chce tvé auto do komise a vezme si 5–7 % ze zisku. My tě naučíme auto prodat a vydělat na něj sám — marže zůstává celá tobě.' },
-  { icon: 'GraduationCap', title: 'Vysvětlíme ti úplně vše', text: 'Provedeme tě problematikou od A do Z, včetně rizik a nástrah, kterým se vyhnout. Hrajeme s otevřenými kartami.' },
-  { icon: 'Gift', title: 'Workshopy, akce a dárky', text: 'Pravidelné workshopy, členské výhody i setkání naživo. Komunita, která drží spolu — online i offline.' },
-  { icon: 'Wrench', title: 'Síť prověřených parťáků', text: 'Mechanici, lakovny a dovozci po celé Evropě. Práce za férové ceny a v termínu — ověřeno na desítkách aut.' },
-  { icon: 'Scale', title: 'Právní a daňové zázemí', text: 'Dovoz, přepis, DPH i smlouvy. Provedeme tě papírováním tak, abys nešlápl vedle.' },
-  { icon: 'HeartHandshake', title: 'Komunita, ne konkurence', text: 'Členové si radí, sdílí kontakty i dealy. Rosteme spolu, ne proti sobě.' },
-];
+/** Všechny dotazy v jednom seznamu (strukturovaná data pro vyhledávače). */
+export const FAQ = FAQ_GROUPS.flatMap((g) => g.items);
 
 /** Živý feed notifikací algoritmu (animovaná ukázka).
  *  ~200 kusů z reálného rozpětí českého bazarového trhu (200–650 tis. Kč) —
@@ -558,14 +557,6 @@ export const MISSION_VALUES = [
   { icon: 'Eye', title: 'Hrajeme fér', text: 'Reálná čísla a reálné flipy. Žádné kečupy ani sliby o milionech přes noc.' },
 ];
 
-/** Garance / důvěryhodnostní body (pod hero) */
-export const GUARANTEES = [
-  { icon: 'FileCheck2', title: 'Ověřený původ vozu', text: 'Prověřená historie, stav km i právní stav. Reporty ke každému autu.' },
-  { icon: 'ShieldCheck', title: 'Smlouva a faktura', text: 'Vše papírově v pořádku — kupní smlouva i faktura na počkání.' },
-  { icon: 'Undo2', title: '2měsíční garance', text: 'Nestihneš do 2 měsíců svůj první flip? Vrátíme ti členský poplatek.' },
-  { icon: 'Headset', title: 'Podpora 7 dní v týdnu', text: 'Píšou ti reální lidé, ne bot. Odpovídáme obvykle do pár hodin.' },
-];
-
 /** „Jak prověřujeme auta" — kroky budující důvěru u bazaru */
 export const VERIFY_STEPS = [
   { icon: 'FileSearch', title: 'Původ a historie', text: 'Prověříme VIN, počet majitelů, servisní historii i skutečný stav km. Kontrolujeme odcizení, leasing a zástavy.' },
@@ -596,16 +587,14 @@ export const COMPANY = {
 export const PAYMENTS = ['Visa', 'Mastercard', 'Apple Pay', 'Google Pay', 'Bankovní převod'];
 
 /** Navigační odkazy */
-// href = samostatná stránka; section = id sekce na úvodní stránce (zvýraznění při scrollu)
+// href = stránka; match = další cesty, kde je odkaz aktivní; section = id sekce na úvodu (zvýraznění při scrollu)
 export const NAV_LINKS = [
-  { href: '/#proc-my', label: 'Proč my', section: 'proc-my' },
-  { href: '/bazar', label: 'Bazar', section: 'marketplace' },
-  { href: '/prodej-auta', label: 'Prodej auta', badge: 'NOVÉ', section: 'prodej-auta' },
-  { href: '/nase-flipy', label: 'Naše Flipy' },
-  { href: '/kalkulacka', label: 'Kalkulačka', section: 'kalkulacka' },
-  { href: '/akademie', label: 'Akademie', section: 'edukace' },
-  { href: '/cenik', label: 'Členství', section: 'cenik' },
-  { href: '/faq', label: 'FAQ', section: 'faq' },
+  { href: '/bazar', label: 'Bazar', match: ['/bazar', '/nase-flipy', '/auto'] },
+  { href: '/prodej-auta', label: 'Prodej auta', badge: 'NOVÉ' },
+  { href: '/akademie', label: 'Akademie' },
+  { href: '/kalkulacka', label: 'Kalkulačka' },
+  { href: '/cenik', label: 'Členství' },
+  { href: '/#kontakt', label: 'Kontakt', section: 'kontakt' },
 ];
 
 /** Osobní servis pro členy — placená doplňková služba NAD RÁMEC členství

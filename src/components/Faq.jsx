@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { FAQ } from '../data/content.js';
+import { FAQ_GROUPS } from '../data/content.js';
 import { useApp } from '../AppContext.jsx';
 import Reveal from './Reveal.jsx';
 
@@ -29,18 +29,25 @@ function FaqItem({ item }) {
 export default function Faq() {
   const { siteText: t } = useApp();
   return (
-    <section id="faq" className="relative border-t border-white/5 py-20 md:py-28">
+    <section id="faq" className="relative scroll-mt-16 border-t border-white/5 py-20 md:py-28">
       <div className="mx-auto max-w-3xl px-6">
         <Reveal className="text-center">
           <span className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">{t.faq_eyebrow || 'Časté dotazy'}</span>
           <h3 className="mt-3 font-display text-3xl md:text-5xl font-bold tracking-tight text-white">{t.faq_title || 'Než se zeptáš'}</h3>
         </Reveal>
 
-        <div className="mt-12 space-y-3">
-          {FAQ.map((item, i) => (
-            <Reveal key={item.q} delay={i * 40}>
-              <FaqItem item={item} />
-            </Reveal>
+        <div className="mt-12 space-y-12">
+          {FAQ_GROUPS.map((g) => (
+            <div key={g.id} id={`faq-${g.id}`} className="scroll-mt-24">
+              <h4 className="mb-4 font-display text-lg font-bold text-white">{g.title}</h4>
+              <div className="space-y-3">
+                {g.items.map((item, i) => (
+                  <Reveal key={item.q} delay={i * 40}>
+                    <FaqItem item={item} />
+                  </Reveal>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
