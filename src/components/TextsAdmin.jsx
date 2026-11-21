@@ -2,21 +2,51 @@ import { useEffect, useState } from 'react';
 import { Type, Save, Loader2, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 import { useApp } from '../AppContext.jsx';
+import { HOME_TEXT } from '../data/landing.js';
 
 /* Editovatelné texty webu, seskupené po sekcích.
    Přidání dalšího pole = jeden řádek sem + použití klíče v dané komponentě. */
 const GROUPS = [
-  { group: 'Hero (úvod)', items: [
-    { key: 'hero_badge', label: 'Odznak nahoře' },
-    { key: 'hero_title', label: 'Nadpis (bílá část)' },
-    { key: 'hero_title_accent', label: 'Nadpis (zelená část)' },
-    { key: 'hero_subtitle', label: 'Podnadpis', multiline: true },
+  { group: 'Úvodní stránka — hero', items: [
+    { key: 'home_hero_badge', label: 'Odznak nahoře' },
+    { key: 'home_hero_title', label: 'Nadpis (bílá část)' },
+    { key: 'home_hero_title_accent', label: 'Nadpis (zelená část)' },
+    { key: 'home_hero_subtitle', label: 'Podnadpis', multiline: true },
+    { key: 'home_hero_savings', label: 'Zelený box (spořicí účet)', multiline: true },
+    { key: 'home_stat_sold', label: 'Počet prodaných aut (jen číslo, zobrazí se s „+")' },
+    { key: 'home_stat_members', label: 'Počet členů komunity (jen číslo, zobrazí se s „+")' },
   ]},
-  { group: 'Proč my', items: [
-    { key: 'whyus_eyebrow', label: 'Nadtitulek' },
-    { key: 'whyus_title', label: 'Nadpis' },
-    { key: 'whyus_subtitle', label: 'Podnadpis', multiline: true },
-    { key: 'whyus_badge', label: 'Odznak unikátnosti' },
+  { group: 'Úvodní stránka — co dostaneš a co se naučíš', items: [
+    { key: 'home_gets_title', label: '„Co u nás dostaneš" — nadpis' },
+    { key: 'home_gets_text', label: '„Co u nás dostaneš" — text', multiline: true },
+    { key: 'home_gets_accent', label: '„Co u nás dostaneš" — zelený řádek' },
+    { key: 'home_learn_title', label: '„Co se naučíš" — nadpis' },
+    { key: 'home_learn_subtitle', label: '„Co se naučíš" — úvod', multiline: true },
+    { key: 'home_group_badge', label: '„Proč zrovna naše skupina" — odznak' },
+    { key: 'home_group_title', label: '„Proč zrovna naše skupina" — nadpis' },
+  ]},
+  { group: 'Úvodní stránka — členství komunity', items: [
+    { key: 'home_member_eyebrow', label: 'Štítek' },
+    { key: 'home_member_title', label: 'Nadpis (bílá část)' },
+    { key: 'home_member_title_accent', label: 'Nadpis (zelené slovo)' },
+    { key: 'home_member_subtitle', label: 'Text pod nadpisem (cena)', multiline: true },
+    { key: 'home_member_netflix_price', label: 'Srovnání vlevo — cena (např. 330 Kč)' },
+    { key: 'home_member_netflix_label', label: 'Srovnání vlevo — název (Netflix Premium)' },
+    { key: 'home_member_netflix_text', label: 'Srovnání vlevo — popis' },
+    { key: 'home_member_our_price', label: 'Srovnání vpravo — naše cena' },
+    { key: 'home_member_our_label', label: 'Srovnání vpravo — název' },
+    { key: 'home_member_our_text', label: 'Srovnání vpravo — popis' },
+    { key: 'home_member_compare_note', label: 'Věta pod srovnáním', multiline: true },
+    { key: 'home_member_referral_title', label: 'Box s provizí — nadpis' },
+    { key: 'home_member_referral_text', label: 'Box s provizí — text', multiline: true },
+    { key: 'home_member_cta', label: 'Tlačítko' },
+    { key: 'home_member_cta_note', label: 'Poznámka pod tlačítkem' },
+  ]},
+  { group: 'Úvodní stránka — naše auta a kontakt', items: [
+    { key: 'home_flips_title', label: '„Tohle jsme sami naflipovali" — nadpis' },
+    { key: 'home_flips_subtitle', label: '„Tohle jsme sami naflipovali" — text', multiline: true },
+    { key: 'home_contact_title', label: 'Kontakt — nadpis newsletteru' },
+    { key: 'home_contact_text', label: 'Kontakt — text newsletteru', multiline: true },
   ]},
   { group: 'Bazar', items: [
     { key: 'market_eyebrow', label: 'Nadtitulek' },
@@ -86,7 +116,8 @@ export default function TextsAdmin() {
 
   useEffect(() => {
     const init = {};
-    ALL_FIELDS.forEach((f) => { init[f.key] = siteText[f.key] ?? ''; });
+    // Texty úvodní stránky mají výchozí znění → ukaž ho, ať je co upravovat.
+    ALL_FIELDS.forEach((f) => { init[f.key] = siteText[f.key] || HOME_TEXT[f.key] || ''; });
     setValues(init);
   }, [siteText]);
 

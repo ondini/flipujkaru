@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Trophy,
   LogOut, ArrowLeft, ExternalLink, Download, Check, TrendingUp, ChevronRight, ChevronLeft, Type,
   Calculator, ArrowRight, Sparkles, SlidersHorizontal, RotateCcw, Table2, Gauge,
-  ArrowUpDown, ArrowUp, ArrowDown, Search, Loader2, Send, HandCoins, Inbox, CarFront,
+  ArrowUpDown, ArrowUp, ArrowDown, Search, Loader2, Send, HandCoins, Inbox, CarFront, Mail,
 } from 'lucide-react';
 import { useApp } from '../AppContext.jsx';
 import { czk, kmFmt } from '../data/content.js';
@@ -29,8 +29,9 @@ const DealDetailModal = lazy(() => import('./dashboard/DealDetailModal.jsx'));
 const FinanceServices = lazy(() => import('./dashboard/FinanceServices.jsx'));
 const ReferralsAdmin = lazy(() => import('./dashboard/ReferralsAdmin.jsx'));
 const SellRequestsAdmin = lazy(() => import('./dashboard/SellRequestsAdmin.jsx'));
+const NewsletterAdmin = lazy(() => import('./dashboard/NewsletterAdmin.jsx'));
 
-const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, TrendingUp, Sparkles, Trophy, HandCoins, Inbox, CarFront };
+const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, TrendingUp, Sparkles, Trophy, HandCoins, Inbox, CarFront, Mail };
 /** Konec zaplaceného období jako 15. 7. 2026, nebo null */
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('cs-CZ') : null);
 
@@ -58,6 +59,7 @@ export default function Dashboard() {
       { key: 'prodej', label: 'Prodej aut', icon: 'CarFront', count: newSellRequests },
       { key: 'admin', label: 'Správa aut', icon: 'Car' },
       { key: 'texty', label: 'Texty webu', icon: 'Type' },
+      { key: 'newsletter', label: 'Newsletter', icon: 'Mail' },
       { key: 'hlidac', label: 'Hlídač', icon: 'Radar' }]
     : DASH_NAV;
 
@@ -121,6 +123,7 @@ export default function Dashboard() {
             {tab === 'admin' && isAdmin && <AdminCars />}
             {tab === 'texty' && isAdmin && <TextsAdmin />}
             {tab === 'hlidac' && isAdmin && <HlidacAdmin />}
+            {tab === 'newsletter' && isAdmin && <NewsletterAdmin />}
           </Suspense>
         </main>
       </div>

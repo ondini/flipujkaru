@@ -2,3 +2,6 @@
 # Staré adresy → nové stránky
 /index.html  /  301
 /bazar/  /bazar  301
+# FAQ je teď součástí stránky Členství
+/faq  /cenik#faq  301
+/faq/  /cenik#faq  301

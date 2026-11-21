@@ -1,60 +1,20 @@
-import { useState } from 'react';
 import { Heart, Mail, Phone, ShieldCheck } from 'lucide-react';
 import { LogoMark } from './Logo.jsx';
 import { COMPANY, PAYMENTS } from '../data/content.js';
-import Reveal from './Reveal.jsx';
 
 /** Sloupce odkazů v patičce */
 const COLUMNS = [
   { title: 'Bazar', links: [['Auta na prodej', '/bazar'], ['Naše flipy', '/nase-flipy'], ['Prodáme ti auto', '/prodej-auta'], ['Nacenit auto', '/prodej-auta/formular']] },
-  { title: 'Akademie', links: [['O akademii', '/akademie'], ['Členství', '/cenik'], ['Kalkulačka zisku', '/kalkulacka'], ['FAQ', '/faq']] },
-  { title: 'Společnost', links: [['O nás', '/#mise'], ['Kontakt', '#footer'], ['Obchodní podmínky', '/obchodni-podminky'], ['Zásady cookies', '/cookies'], ['Ochrana údajů (GDPR)', '/gdpr']] },
+  { title: 'Akademie', links: [['O akademii', '/akademie'], ['Členství', '/cenik'], ['Osobní servis', '/cenik#osobni-servis'], ['Kalkulačka zisku', '/kalkulacka'], ['Časté dotazy', '/cenik#faq']] },
+  { title: 'Společnost', links: [['O nás', '/akademie#mise'], ['Kontakt', '/#kontakt'], ['Obchodní podmínky', '/obchodni-podminky'], ['Zásady cookies', '/cookies'], ['Ochrana údajů (GDPR)', '/gdpr']] },
 ];
-
-/** Formulář newsletteru s potvrzením */
-function Newsletter() {
-  const [sent, setSent] = useState(false);
-  const onSubmit = (e) => {
-    e.preventDefault();
-    setSent(true);
-    e.target.reset();
-    setTimeout(() => setSent(false), 2500);
-  };
-  return (
-    <form onSubmit={onSubmit} className="flex w-full max-w-md gap-3">
-      <input
-        type="email"
-        required
-        placeholder="tvuj@email.cz"
-        className="flex-1 rounded-xl border border-white/10 bg-ink-950 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20"
-      />
-      <button
-        type="submit"
-        className={`whitespace-nowrap rounded-xl px-5 py-3 text-sm font-semibold text-ink-950 shadow-glow transition hover:brightness-110 ${
-          sent ? 'bg-white' : 'bg-accent'
-        }`}
-      >
-        {sent ? 'Přihlášeno ✓' : 'Odebírat'}
-      </button>
-    </form>
-  );
-}
 
 export default function Footer() {
   return (
     <footer id="footer" className="border-t border-white/5 bg-ink-900">
       <div className="mx-auto max-w-7xl px-6 py-16">
-        {/* Newsletter blok */}
-        <Reveal className="flex flex-col justify-between gap-6 rounded-3xl border border-white/10 bg-ink-850 p-8 shadow-soft lg:flex-row lg:items-center md:p-10">
-          <div className="max-w-md">
-            <h3 className="font-display text-2xl font-bold text-white">Nezmeškej nové kusy a tipy</h3>
-            <p className="mt-2 text-zinc-400">Jednou týdně to nejlepší z bazaru a flipping světa. Žádný spam.</p>
-          </div>
-          <Newsletter />
-        </Reveal>
-
         {/* Odkazy */}
-        <div className="mt-12 grid grid-cols-2 gap-8 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2">
             <a href="/" className="flex items-center gap-2.5">
               <span className="grid place-items-center w-10 h-10 rounded-xl bg-ink-850 border border-white/10">

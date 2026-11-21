@@ -10,8 +10,8 @@ export const OG_IMAGE = `${SITE_URL}/og.png`;
 /** Statické stránky: cesta → title, description (+ sitemap priorita). */
 export const PAGES = {
   '/': {
-    title: 'FlipujKáru — bazar prověřených aut a car-flipping akademie',
-    description: 'Bazar prověřených aut, prodej auta za tebe a car-flipping akademie. Kup chytře, prodej se ziskem.',
+    title: 'FlipujKáru — prověřená auta a komunita car flipperů',
+    description: 'Nauč se kupovat a prodávat auta se ziskem. Know-how, scanner aut pod cenou napříč Evropou, komunita 1 800+ flipperů a provize za doporučení. Prověřená auta i prodej tvého auta.',
     priority: '1.0', changefreq: 'daily',
   },
   '/bazar': {
@@ -45,14 +45,9 @@ export const PAGES = {
     priority: '0.7', changefreq: 'monthly',
   },
   '/cenik': {
-    title: 'Ceník členství v akademii | FlipujKáru',
-    description: 'Členství v car-flipping akademii FlipujKáru: měsíční, čtyřměsíční i roční. Kurzy, podhodnocená auta z algoritmu a komunita.',
+    title: 'Členství — ceník, osobní servis a časté dotazy | FlipujKáru',
+    description: 'Členství FlipujKáru: měsíční, čtyřměsíční i roční (3 999 Kč). Know-how, scanner aut pod cenou, komunita a provize. Osobní 1:1 servis a odpovědi na časté dotazy.',
     priority: '0.8', changefreq: 'monthly',
-  },
-  '/faq': {
-    title: 'Časté otázky | FlipujKáru',
-    description: 'Odpovědi na nejčastější otázky o členství, akademii, bazaru a prodeji auta přes FlipujKáru.',
-    priority: '0.6', changefreq: 'monthly',
   },
   '/obchodni-podminky': {
     title: 'Obchodní podmínky | FlipujKáru',
@@ -73,7 +68,7 @@ export const PAGES = {
 
 export const NOT_FOUND = {
   title: 'Stránka nenalezena | FlipujKáru',
-  description: 'Tahle stránka tu není. Zkus bazar, prodej auta nebo akademii.',
+  description: 'Tahle stránka tu není. Zkus bazar, prodej auta, akademii nebo členství.',
 };
 
 export const LEGAL_SLUGS = ['obchodni-podminky', 'cookies', 'gdpr'];

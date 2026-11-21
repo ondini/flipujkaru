@@ -4,6 +4,7 @@ import { useCountUp } from '../hooks/useCountUp.js';
 import { useApp } from '../AppContext.jsx';
 import BrandMarquee from './BrandMarquee.jsx';
 import Hero3D from './hero3d/Hero3D.jsx';
+import { homeText } from '../data/landing.js';
 
 /** Jedna statistika s animovaným počítadlem */
 function Stat({ end, suffix = '', decimals = 0, label }) {
@@ -22,7 +23,9 @@ function Stat({ end, suffix = '', decimals = 0, label }) {
 export default function Hero() {
   const heroRef = useRef(null);
   const spotRef = useRef(null);
-  const { siteText: t } = useApp();
+  const { siteText } = useApp();
+  const t = (k) => homeText(siteText, k);
+  const statNum = (k) => parseInt(String(t(k)).replace(/\D/g, ''), 10) || 0;
 
   // Spotlight, který sleduje kurzor
   const onMove = (e) => {
@@ -55,26 +58,25 @@ export default function Hero() {
         <div className="max-w-3xl animate-fade-up">
           <span className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-            {t.hero_badge || 'Prověřená auta a reálné know-how — postavené na datech'}
+            {t('home_hero_badge')}
           </span>
 
           <h2 className="mt-6 font-display text-5xl sm:text-6xl md:text-7xl font-bold leading-[1.02] tracking-tight text-white">
-            {t.hero_title || 'Kupuj chytře.'}{' '}
-            <span className="text-grad">{t.hero_title_accent || 'Prodávej se ziskem'}</span>.
+            {t('home_hero_title')}{' '}
+            <span className="text-grad">{t('home_hero_title_accent')}</span>.
           </h2>
 
           <p className="mt-6 max-w-2xl text-lg md:text-xl leading-relaxed text-zinc-400">
-            {t.hero_subtitle ||
-              'Prověřená auta skladem — s doloženou historií, smlouvou i fakturou. Plus data, nástroje a komunita, díky kterým auta se ziskem nakupuješ a prodáváš i ty. Žádné sliby přes noc, jen ověřený systém.'}
+            {t('home_hero_subtitle')}
           </p>
 
           {/* Zhodnocení úspor — proč flipovat auta místo nechat peníze ležet */}
           <div className="mt-4 max-w-xl rounded-2xl border border-accent/30 bg-accent-soft px-4 py-3 text-sm font-semibold leading-relaxed text-accent">
-            Peníze na spořicím účtu jen pomalu ztrácí hodnotu — auto pod cenou ti za pár týdnů vydělá víc než banka za rok.
+            {t('home_hero_savings')}
           </div>
 
           <div className="mt-9 flex flex-col sm:flex-row gap-4">
-            <a href="/cenik" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-7 py-4 font-semibold text-ink-950 transition animate-glow hover:brightness-110 hover:scale-[1.02] active:scale-95">
+            <a href="/#clenstvi" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-7 py-4 font-semibold text-ink-950 transition animate-glow hover:brightness-110 hover:scale-[1.02] active:scale-95">
               <Sparkles className="w-5 h-5" /> Staň se členem
               <ArrowRight className="w-4 h-4 transition group-hover:translate-x-1" />
             </a>
@@ -84,8 +86,8 @@ export default function Hero() {
           </div>
 
           <dl className="mt-14 grid grid-cols-2 gap-6 max-w-sm">
-            <Stat end={320} suffix="+" label="prodaných aut" />
-            <Stat end={1800} suffix="+" label="členů komunity" />
+            <Stat end={statNum('home_stat_sold')} suffix="+" label="prodaných aut" />
+            <Stat end={statNum('home_stat_members')} suffix="+" label="členů komunity" />
           </dl>
         </div>
       </div>

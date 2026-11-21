@@ -10,7 +10,7 @@ export default function PersonalService() {
   const { member } = useApp();
   const subject = encodeURIComponent('Zájem o osobní servis / dovoz auta');
   return (
-    <section id="osobni-servis" className="relative border-y border-white/5 bg-ink-900/40 py-20 md:py-28">
+    <section id="osobni-servis" className="relative scroll-mt-16 border-y border-white/5 bg-ink-900/40 py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <Reveal>
@@ -38,7 +38,7 @@ export default function PersonalService() {
                   <Lock className="h-4 w-4 shrink-0 text-accent" /> Dostupné pro členy AKADEMIE — nejdřív roční členství, pak se domluvíme individuálně.
                 </p>
                 <a
-                  href="/cenik"
+                  href="/cenik#cenik"
                   className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-semibold text-ink-950 shadow-glow transition hover:brightness-110"
                 >
                   Chci se stát členem <ArrowRight className="h-4 w-4" />

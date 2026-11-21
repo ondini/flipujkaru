@@ -152,7 +152,7 @@ export default function Checkout() {
                         {o.label}
                         <span className={`mt-0.5 block whitespace-nowrap text-[11px] font-medium ${active ? 'text-ink-950/70' : 'text-zinc-500'}`}>{czk(o.price)}</span>
                         {/* Řádek se slevou i u měsíční varianty (prázdný) — stejná výška tlačítek */}
-                        <span className={`block text-[10px] font-bold ${active ? 'text-ink-950/70' : 'text-accent'}`}>{savePct(o) > 0 ? `−${savePct(o)} %` : '\u00a0'}</span>
+                        <span className={`block text-[10px] font-bold ${active ? 'text-ink-950/70' : 'text-accent'}`}>{savePct(o) > 0 ? `ušetříš ${savePct(o)} %` : '\u00a0'}</span>
                       </button>
                     );
                   })}

@@ -11,7 +11,9 @@ export default function Navbar() {
   const [section, setSection] = useState(''); // viditelná sekce na úvodní stránce
   const path = usePath();
   // Aktivní odkaz: na úvodu podle sekce v zorném poli, jinde podle adresy stránky
-  const isActive = (l) => (path === '/' ? !!l.section && l.section === section : l.href === path || path.startsWith(`${l.href}/`));
+  const isActive = (l) => (path === '/'
+    ? !!l.section && l.section === section
+    : (l.match || [l.href]).some((h) => h === path || path.startsWith(`${h}/`)));
   const { user, openDashboard, openAuth, hasAccess: access, membershipLoaded, signOut } = useApp();
   // Přihlášený bez členství nemá do klientské zóny → tlačítko vede na platbu.
   // Dokud se členství načítá, ber ho jako člena (bez probliknutí „Aktivovat").
