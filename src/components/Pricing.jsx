@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, Lock, Undo2, XCircle } from 'lucide-react';
+import { Sparkles, Lock, Undo2, XCircle, Flame, Gift } from 'lucide-react';
 import { PLANS, czk } from '../data/content.js';
 import { BILLING_OPTIONS, DEFAULT_BILLING, perMonth, campaignFromText, discountedPrice } from '../config/billing.js';
 import { useApp } from '../AppContext.jsx';
@@ -71,7 +71,7 @@ function PlanCard({ plan }) {
               {o.label}
               {savePct(o) > 0 && (
                 <span className={`mt-0.5 block text-[10px] font-bold ${active ? 'text-ink-950/70' : 'text-accent'}`}>
-                  −{savePct(o)} %
+                  ušetříš {savePct(o)} %
                 </span>
               )}
             </button>
@@ -86,12 +86,24 @@ function PlanCard({ plan }) {
       <p className="mt-1 text-xs text-zinc-500">
         {billing.months > 1 ? `${czk(perMonth(billing))} / měsíc · ${billing.note}` : billing.note}
       </p>
+      {savePct(billing) > 0 && (
+        <p className="mt-1 text-xs font-semibold text-accent">Ušetříš {savePct(billing)} % oproti měsíčnímu plánu</p>
+      )}
       {(campaign.trial || pct > 0) && (
-        <p className="mt-2 inline-flex rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
-          {campaign.trial && pct > 0 && `První měsíc zdarma, pak ${billing.months === 1 ? '2. měsíc' : `první ${billing.period}`} za ${new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 2 }).format(discountedPrice(billing))} Kč (−${pct} %)`}
-          {campaign.trial && !pct && 'První měsíc zdarma — platíš až po 30 dnech'}
-          {!campaign.trial && pct > 0 && `Úvodní sleva −${pct} % na první ${billing.period}`}
-        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {campaign.trial && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent">
+              <Gift className="h-3.5 w-3.5" /> První měsíc zdarma
+            </span>
+          )}
+          {pct > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-bold text-ink-950">
+              <Flame className="h-3.5 w-3.5" />
+              Kampaň: −{pct} % na {billing.months === 1 ? 'první placený měsíc' : `první placené období (${billing.period})`}{campaign.trial ? ' po měsíci zdarma' : ''}
+              {' '}→ {new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 2 }).format(discountedPrice(billing))} Kč
+            </span>
+          )}
+        </div>
       )}
 
       <ul className="mt-6 space-y-3">
