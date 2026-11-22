@@ -101,10 +101,10 @@ export default function Navbar() {
                 <LogIn className="w-4 h-4" /> Přihlásit
               </button>
               <a
-                href="/cenik"
+                href="/#clenstvi"
                 className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-ink-950 shadow-glow transition hover:brightness-110 hover:scale-[1.03] active:scale-95"
               >
-                Začít flipovat <ArrowRight className="w-4 h-4" />
+                Staň se členem <ArrowRight className="w-4 h-4" />
               </a>
             </>
           )}
