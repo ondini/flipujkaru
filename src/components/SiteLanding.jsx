@@ -71,7 +71,6 @@ function PageContent({ route }) {
           <HomeGroup />
           <HomeMembership />
           <HomeFlips />
-          <SellCar />
           <HomeContact />
         </>
       );
