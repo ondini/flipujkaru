@@ -150,7 +150,8 @@ function WatcherForm({ initial, brands, info, onCancel, onSaved }) {
 
   useEffect(() => {
     setModels([]);
-    if (w.brand) clenHlidacApi.models(w.brand).then(setModels, () => setModels([]));
+    // Ukládá se název modelu (M2, Řada 3), ne slug: konektory model hledají podle názvu a člen ho vidí v kartě.
+    if (w.brand) clenHlidacApi.models(w.brand).then((ms) => setModels(ms.map(([n]) => [n, n])), () => setModels([]));
   }, [w.brand]);
 
   const submit = async (e) => {
