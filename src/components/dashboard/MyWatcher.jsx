@@ -40,7 +40,7 @@ export default function MyWatcher() {
             <h2 className="flex items-center gap-2 font-display text-xl font-bold text-white"><Radar className="h-5 w-5 text-accent" /> Můj hlídač</h2>
             <p className="mt-2 text-sm leading-relaxed text-zinc-400">
               Zadej auto, které chceš flipnout. Hlídač projíždí nové inzeráty v Česku, Německu, Rakousku, Nizozemsku a Belgii,
-              ověří, že jde opravdu o stejné auto, a porovná cenu se stejnými auty v ČR. Když vyjde marže, pošle ti e-mail.
+              ověří, že jde opravdu o stejné auto, a porovná cenu se stejnými auty v ČR. Když vyjde marže, ukáže ti ho tady{info.email_ready ? ' a pošle e-mail' : ''}.
             </p>
           </div>
           <button type="button" disabled={full} onClick={() => { setMsg(null); setEditing({ ...EMPTY }); }}
@@ -50,9 +50,8 @@ export default function MyWatcher() {
         </div>
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-400">
           <span><b className="text-white">{info.watchers.length}</b> z {info.limit} hlídačů</span>
-          <span className="inline-flex items-center gap-1.5"><Mail className="h-4 w-4 text-zinc-500" /> {user?.email}, nejvýš {info.email_cap} e-mailů denně</span>
+          {info.email_ready && <span className="inline-flex items-center gap-1.5"><Mail className="h-4 w-4 text-zinc-500" /> {user?.email}, nejvýš {info.email_cap} e-mailů denně</span>}
         </div>
-        {!info.email_ready && <p className="mt-3 rounded-xl bg-amber-400/10 px-3 py-2 text-sm text-amber-200">E-maily zatím nechodí, nalezená auta ale uvidíš níž.</p>}
         {full && <p className="mt-3 text-sm text-zinc-500">Máš všechny hlídače. Pro jiné auto jeden uprav nebo smaž.</p>}
       </section>
 
