@@ -5,11 +5,13 @@ import { czk, kmFmt } from '../../data/content.js';
 
 const Watchers = lazy(() => import('./Watchers.jsx'));
 const TelegramTemplate = lazy(() => import('./TelegramTemplate.jsx'));
+const Delivery = lazy(() => import('./Delivery.jsx'));
 
 const TABS = [
   { key: 'prehled', label: 'Přehled' },
   { key: 'hlidace', label: 'Hlídače' },
   { key: 'auta', label: 'Nalezená auta' },
+  { key: 'odesilani', label: 'Odesílání' },
   { key: 'telegram', label: 'Telegram zpráva' },
   { key: 'nastaveni', label: 'Nastavení ceny' },
 ];
@@ -35,6 +37,7 @@ export default function HlidacAdmin() {
         {tab === 'prehled' && <Overview onOpen={setTab} />}
         {tab === 'hlidace' && <Watchers />}
         {tab === 'auta' && <Alerts />}
+        {tab === 'odesilani' && <Delivery />}
         {tab === 'telegram' && <TelegramTemplate />}
         {tab === 'nastaveni' && <Costs />}
       </Suspense>
@@ -70,6 +73,11 @@ export function useHlidac(fn, deps = []) {
 
 const PORTAL_NAMES = { sauto: 'Sauto', bazos: 'Bazoš.cz', bazos_sk: 'Bazoš.sk', mobilede: 'mobile.de', autoscout24: 'AutoScout24', kleinanzeigen: 'Kleinanzeigen', marktplaats: 'Marktplaats', '2dehands': '2dehands', willhaben: 'willhaben' };
 const when = (iso) => (iso ? new Date(iso).toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'nikdy');
+const TG = {
+  silent: ['jen uloženo', 'bg-white/5 text-zinc-400'], queued: ['čeká na Telegram', 'bg-amber-400/10 text-amber-200'],
+  sent: ['v Telegramu', 'bg-sky-400/10 text-sky-300'], expired: ['propadlo (limit)', 'bg-white/5 text-zinc-500'],
+  gone: ['prodáno dřív', 'bg-white/5 text-zinc-500'], dup: ['už odesláno jinde', 'bg-white/5 text-zinc-500'],
+};
 const STATE = { ok: ['běží', 'text-accent'], slow: ['pomalu', 'text-amber-300'], blocked: ['blokace', 'text-red-400'], down: ['stojí', 'text-zinc-500'] };
 
 /* ---------- Přehled ---------- */
@@ -81,8 +89,8 @@ function Overview({ onOpen }) {
   const k = o.kpi;
   const tiles = [
     ['Aktivní hlídače', `${k.watchers_active} z ${k.watchers_total}`],
-    ['Alerty dnes', k.sent_today],
-    ['Alerty za týden', k.sent_week],
+    ['Nalezeno dnes', k.sent_today],
+    ['Nalezeno za týden', k.sent_week],
     ['Nové inzeráty 24 h', k.new_24h],
     ['Portály v provozu', `${k.portals_ok} z ${k.portals_total}`],
     ['Nejvyšší marže týdne', k.best_margin?.margin_czk ? czk(k.best_margin.margin_czk) : '–'],
@@ -92,6 +100,12 @@ function Overview({ onOpen }) {
       {k.watchers_active === 0 && (
         <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">
           Všechny hlídače jsou vypnuté, hlídač nic nehledá. <button onClick={() => onOpen('hlidace')} className="font-semibold underline">Zapnout v záložce Hlídače</button>
+        </p>
+      )}
+      {o.silent && (
+        <p className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-zinc-300">
+          <span>Tichý režim: nalezená auta se jen ukládají sem, do Telegramu nechodí nic.</span>
+          <button onClick={() => onOpen('odesilani')} className="font-semibold text-accent hover:underline">Odesílání</button>
         </p>
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -118,7 +132,7 @@ function Overview({ onOpen }) {
         </div>
       </section>
       <section className="rounded-2xl border border-white/10 bg-ink-850 p-4">
-        <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold text-white">Poslední odeslaná auta</h2>
+        <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold text-white">Poslední nalezená auta</h2>
           <button onClick={() => onOpen('auta')} className="text-sm text-accent hover:underline">Všechna auta</button></div>
         <AlertList rows={(o.feed || []).filter((a) => a.sent).slice(0, 6)} />
       </section>
@@ -138,7 +152,7 @@ function Alerts() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        {[['sent', 'Odeslané'], ['rejected', 'Zamítnuté'], ['all', 'Vše']].map(([v, l]) => (
+        {[['sent', 'Nalezené'], ['rejected', 'Zamítnuté'], ['all', 'Vše']].map(([v, l]) => (
           <button key={v} onClick={() => setFilter(v)} aria-pressed={filter === v}
             className={`rounded-xl border px-3 py-1.5 text-sm ${filter === v ? 'border-accent/50 bg-accent-soft text-accent' : 'border-white/10 text-zinc-400 hover:text-white'}`}>{l}</button>
         ))}
@@ -168,6 +182,7 @@ function AlertList({ rows, showReason }) {
             <div className="mt-0.5 text-xs text-zinc-500">
               {[a.year, a.km != null ? kmFmt(a.km) : null, PORTAL_NAMES[a.portal] || a.portal, a.location, a.watcher, when(a.at)].filter(Boolean).join(' · ')}
             </div>
+            {a.sent && TG[a.tg] && <span className={`mt-1 inline-block rounded-md px-1.5 py-0.5 text-[11px] ${TG[a.tg][1]}`}>{TG[a.tg][0]}</span>}
             {showReason && !a.sent && a.reason && <div className="mt-1 inline-flex items-center gap-1 text-xs text-red-300"><X className="h-3 w-3" /> {a.reason}</div>}
           </div>
           <div className="text-right">

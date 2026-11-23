@@ -30,6 +30,7 @@ const FinanceServices = lazy(() => import('./dashboard/FinanceServices.jsx'));
 const ReferralsAdmin = lazy(() => import('./dashboard/ReferralsAdmin.jsx'));
 const SellRequestsAdmin = lazy(() => import('./dashboard/SellRequestsAdmin.jsx'));
 const NewsletterAdmin = lazy(() => import('./dashboard/NewsletterAdmin.jsx'));
+const MyWatcher = lazy(() => import('./dashboard/MyWatcher.jsx'));
 
 const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, TrendingUp, Sparkles, Trophy, HandCoins, Inbox, CarFront, Mail };
 /** Konec zaplaceného období jako 15. 7. 2026, nebo null */
@@ -114,6 +115,7 @@ export default function Dashboard() {
             {tab === 'zebricky' && <Leaderboard />}
             {tab === 'kalkulacka' && <CalcPanel />}
             {tab === 'doporucene' && <RecommendedFlips />}
+            {tab === 'muj-hlidac' && <MyWatcher />}
             {tab === 'materialy' && <Courses courseId={courseId} setCourseId={setCourseId} />}
             {tab === 'financni' && <FinanceServices />}
             {tab === 'doporuceni' && isAdmin && <ReferralsAdmin onCountChange={setNewReferrals} />}

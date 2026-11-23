@@ -9,6 +9,7 @@ export const DASH_NAV = [
   { key: 'zebricky', label: 'Žebříčky', icon: 'Trophy' },
   { key: 'kalkulacka', label: 'Kalkulačka', icon: 'Calculator' },
   { key: 'doporucene', label: 'Doporučené flipy', icon: 'Sparkles' },
+  { key: 'muj-hlidac', label: 'Můj hlídač', icon: 'Radar', badge: 'NOVÉ' },
   { key: 'materialy', label: 'Mé materiály', icon: 'GraduationCap' },
   { key: 'financni', label: 'Finanční služby', icon: 'HandCoins', badge: 'NOVÉ' },
   { key: 'faktury', label: 'Faktury', icon: 'Receipt' },
