@@ -10,8 +10,8 @@ import { json } from '../../_utils.js';
  * Proměnné prostředí: HLIDAC_URL, HLIDAC_KEY, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.
  */
 const ROUTES = {
-  GET: ['config', 'overview', 'alerts', 'portals', 'brands', 'models', 'suggest', 'telegram'],
-  POST: ['config', 'telegram', 'telegram/preview'],
+  GET: ['config', 'overview', 'alerts', 'portals', 'brands', 'models', 'suggest', 'telegram', 'delivery'],
+  POST: ['config', 'telegram', 'telegram/preview', 'delivery'],
 };
 const MAX_BODY = 256 * 1024;
 const TIMEOUT_MS = 20000;

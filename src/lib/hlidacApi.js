@@ -37,4 +37,6 @@ export const hlidacApi = {
   telegram: () => call('telegram'),
   saveTelegram: (template) => call('telegram', { method: 'POST', body: { template } }),
   previewTelegram: (template) => call('telegram/preview', { method: 'POST', body: { template } }),
+  delivery: () => call('delivery'),
+  saveDelivery: (settings) => call('delivery', { method: 'POST', body: { settings } }),
 };
