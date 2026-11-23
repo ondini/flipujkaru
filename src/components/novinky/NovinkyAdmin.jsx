@@ -146,6 +146,12 @@ function Karta({ p, kam, onHotovo }) {
               {o.problemy.map((x) => <li key={x} className="flex gap-1.5"><AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />{x}</li>)}
             </ul>
           )}
+          {o.drobnosti?.length > 0 && (
+            <details className="text-xs text-zinc-400">
+              <summary className="cursor-pointer select-none text-zinc-500 hover:text-zinc-300">Drobnosti z kontroly ({o.drobnosti.length}), článek nezastavily</summary>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">{o.drobnosti.map((x) => <li key={x}>{x}</li>)}</ul>
+            </details>
+          )}
           <ul className="space-y-0.5 text-xs">
             {p.zdroje.map((z) => (
               <li key={z.url}><a href={safeUrl(z.url)} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1 text-zinc-400 hover:text-accent">
