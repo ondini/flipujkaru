@@ -67,6 +67,7 @@ export default function NovinkyAdmin() {
 function Seznam({ sekce, onZmena }) {
   const [data, error, loading, reload] = useHlidac(() => novinkyApi.pribehy(sekce.key), [sekce.key]);
   const [filtr, setFiltr] = useState('ceka');
+  const [vysledek, setVysledek] = useState(''); // karta po schválení ze seznamu zmizí, výsledek musí zůstat vidět
   const prepisuje = data?.pribehy?.some((p) => p.prepisuje);
 
   useEffect(() => { // během přepisu se seznam sám obnovuje, nová verze přijde za pár minut
@@ -82,7 +83,7 @@ function Seznam({ sekce, onZmena }) {
     || (filtr === 'ceka' && ['navrh', 'prepis'].includes(p.stav))
     || (filtr === 'schvaleno' && p.stav === 'schvaleno')
     || (filtr === 'ostatni' && ['zamitnuto', 'neproslo', 'propadlo'].includes(p.stav)));
-  const hotovo = () => { reload(); onZmena(); };
+  const hotovo = (text) => { setVysledek(text); reload(); onZmena(); };
 
   return (
     <div className="space-y-4">
@@ -93,6 +94,7 @@ function Seznam({ sekce, onZmena }) {
         ))}
         <button onClick={reload} className="ml-auto inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white"><RefreshCw className="h-3.5 w-3.5" /> Obnovit</button>
       </div>
+      {vysledek && <p role="status" className="rounded-xl border border-accent/30 bg-accent-soft p-3 text-sm text-accent">{vysledek}</p>}
       {shown.length === 0 && (
         <p className="rounded-2xl border border-white/10 bg-ink-850 p-4 text-sm text-zinc-400">
           {filtr === 'ceka' ? 'Teď nic nečeká na schválení. Nové návrhy přicházejí v 10:00 a 16:00.' : 'Nic tu není.'}
@@ -115,7 +117,7 @@ function Karta({ p, kam, onHotovo }) {
 
   const proved = async (fn) => {
     setBezi(true); setVysledek(null);
-    try { setVysledek({ ok: true, text: (await fn()).zprava }); setRezim(null); onHotovo(); }
+    try { const { zprava } = await fn(); setRezim(null); onHotovo(zprava); }
     catch (e) { setVysledek({ ok: false, text: e.message }); }
     finally { setBezi(false); }
   };

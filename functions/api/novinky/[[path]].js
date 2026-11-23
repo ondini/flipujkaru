@@ -52,7 +52,10 @@ export async function onRequest({ request, env, params }) {
       headers: { 'x-novinky-key': env.NOVINKY_KEY, ...(body ? { 'content-type': 'application/json' } : {}) },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-  } catch {
+  } catch (e) {
+    if (e?.name === 'TimeoutError') {
+      return json({ error: 'Bot neodpověděl do 90 s. Akce možná doběhla, za chvíli obnov seznam a zkontroluj stav.' }, 504);
+    }
     return json({ error: 'Bot novinek je teď nedostupný (Mac spí nebo je vypnutý).', offline: true }, 503);
   }
   if (upstream.status >= 502) return json({ error: 'Bot novinek je teď nedostupný (Mac spí nebo je vypnutý).', offline: true }, 503);
