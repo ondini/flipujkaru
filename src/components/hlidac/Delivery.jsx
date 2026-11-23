@@ -12,6 +12,7 @@ const FIELDS = {
   members: [
     ['member_watchers', 'Hlídačů na člena', 'Kolik hlídačů si může nastavit člen s aktivním předplatným.', 'hlídače'],
     ['email_daily_cap', 'E-mailů na člena za den', 'Každé nalezené auto jde členovi hned e-mailem, nejvýš tolik za den.', 'e-mailů'],
+    ['member_interval_min', 'Hledání pro členy každých', 'Jak často hlídač projede auta, která hlídají jen členové. Kratší = dřív, ale víc dotazů z jedné IP.', 'min'],
   ],
 };
 

@@ -266,7 +266,7 @@ function Card({ title, help, children }) {
   );
 }
 
-function Toggle({ on, onClick, children }) {
+export function Toggle({ on, onClick, children }) {
   return (
     <button type="button" onClick={onClick} aria-pressed={on}
       className={`rounded-xl border px-3 py-1.5 text-sm transition ${on ? 'border-accent/60 bg-accent-soft text-accent' : 'border-white/10 text-zinc-300 hover:border-white/25'}`}>{children}</button>
@@ -281,7 +281,7 @@ function Num({ value, onChange, min, max, placeholder }) {
 }
 
 /** Našeptávač: píšeš a filtruje se seznam [název, hodnota]. */
-function Combo({ label, options, value, onPick, placeholder, disabled, allowCustom }) {
+export function Combo({ label, options, value, onPick, placeholder, disabled, allowCustom }) {
   const current = options.find(([, v]) => v === value)?.[0] || value || '';
   const [q, setQ] = useState(current);
   const [open, setOpen] = useState(false);
