@@ -152,11 +152,12 @@ function WatcherForm({ initial, brands, portals, names, busy, msg, onCancel, onS
           <Combo label="Značka" placeholder="Začni psát, třeba Škoda" options={brands} value={w.brand}
             onPick={(slug) => set({ brand: slug, model: '', keywords: [] })} />
           <Combo label="Model" placeholder={w.brand ? 'Začni psát, třeba Superb' : 'Nejdřív značka'} disabled={!w.brand}
-            options={models.map(([n]) => [n, n])} value={w.model} onPick={(m) => set({ model: m, keywords: [] })} />
+            options={models.map(([n]) => [n, n])} value={w.model} onPick={(m) => set({ model: m, keywords: [] })} allowCustom />
         </div>
         {hint && (
           <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-zinc-400"><Sparkles className="h-3.5 w-3.5 text-accent" />
             {hint.count ? `Za posledních 60 dní hlídač viděl ${hint.count.toLocaleString('cs-CZ')} inzerátů tohoto modelu.` : 'Tenhle model hlídač zatím na trhu neviděl, nabídka verzí bude prázdná.'}
+            {w.model && models.length > 0 && !models.some(([n]) => n.toLowerCase() === w.model.toLowerCase()) && ' Vlastní model: hlídač ho hledá podle názvu v inzerátu, portál, který ho nezná, ho přeskočí.'}
           </p>
         )}
       </Card>
@@ -280,7 +281,7 @@ function Num({ value, onChange, min, max, placeholder }) {
 }
 
 /** Našeptávač: píšeš a filtruje se seznam [název, hodnota]. */
-function Combo({ label, options, value, onPick, placeholder, disabled }) {
+function Combo({ label, options, value, onPick, placeholder, disabled, allowCustom }) {
   const current = options.find(([, v]) => v === value)?.[0] || value || '';
   const [q, setQ] = useState(current);
   const [open, setOpen] = useState(false);
@@ -289,8 +290,11 @@ function Combo({ label, options, value, onPick, placeholder, disabled }) {
   const hits = useMemo(() => {
     const f = fold(q.trim());
     const all = options.filter(([n]) => !f || fold(n).includes(f));
-    return all.sort((a, b) => fold(a[0]).indexOf(f) - fold(b[0]).indexOf(f)).slice(0, 12);
-  }, [q, options]);
+    const top = all.sort((a, b) => fold(a[0]).indexOf(f) - fold(b[0]).indexOf(f)).slice(0, 12);
+    const typed = q.trim().replace(/\s+/g, ' ').slice(0, 40);
+    if (allowCustom && typed && !options.some(([n]) => fold(n) === fold(typed))) top.push([`+ Přidat vlastní: „${typed}“`, typed]);
+    return top;
+  }, [q, options, allowCustom]);
   return (
     <div className="relative">
       <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</div>
