@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Trophy,
   LogOut, ArrowLeft, ExternalLink, Download, Check, TrendingUp, ChevronRight, ChevronLeft, Type,
   Calculator, ArrowRight, Sparkles, SlidersHorizontal, RotateCcw, Table2, Gauge,
-  ArrowUpDown, ArrowUp, ArrowDown, Search, Loader2, Send, HandCoins, Inbox, CarFront, Mail,
+  ArrowUpDown, ArrowUp, ArrowDown, Search, Loader2, Send, Newspaper, HandCoins, Inbox, CarFront, Mail,
 } from 'lucide-react';
 import { useApp } from '../AppContext.jsx';
 import { czk, kmFmt } from '../data/content.js';
@@ -21,6 +21,7 @@ import CampaignSettings from './dashboard/CampaignSettings.jsx';
 const AdminCars = lazy(() => import('./AdminCars.jsx'));
 const TextsAdmin = lazy(() => import('./TextsAdmin.jsx'));
 const HlidacAdmin = lazy(() => import('./hlidac/HlidacAdmin.jsx'));
+const NovinkyAdmin = lazy(() => import('./novinky/NovinkyAdmin.jsx'));
 const MyFlips = lazy(() => import('./dashboard/MyFlips.jsx'));
 const Leaderboard = lazy(() => import('./dashboard/Leaderboard.jsx'));
 const CalcPanel = lazy(() => import('./dashboard/CalcPanel.jsx'));
@@ -32,7 +33,7 @@ const SellRequestsAdmin = lazy(() => import('./dashboard/SellRequestsAdmin.jsx')
 const NewsletterAdmin = lazy(() => import('./dashboard/NewsletterAdmin.jsx'));
 const MyWatcher = lazy(() => import('./dashboard/MyWatcher.jsx'));
 
-const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, TrendingUp, Sparkles, Trophy, HandCoins, Inbox, CarFront, Mail };
+const NAV_ICONS = { LayoutDashboard, Radar, GraduationCap, Receipt, Settings, Car, Type, Calculator, TrendingUp, Sparkles, Trophy, HandCoins, Inbox, CarFront, Mail, Newspaper };
 /** Konec zaplaceného období jako 15. 7. 2026, nebo null */
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('cs-CZ') : null);
 
@@ -61,7 +62,7 @@ export default function Dashboard() {
       { key: 'admin', label: 'Správa aut', icon: 'Car' },
       { key: 'texty', label: 'Texty webu', icon: 'Type' },
       { key: 'newsletter', label: 'Newsletter', icon: 'Mail' },
-      { key: 'hlidac', label: 'Hlídač', icon: 'Radar' }]
+      { key: 'hlidac', label: 'Hlídač', icon: 'Radar' }, { key: 'novinky', label: 'Novinky a zákony', icon: 'Newspaper' }]
     : DASH_NAV;
 
   return (
@@ -125,6 +126,7 @@ export default function Dashboard() {
             {tab === 'admin' && isAdmin && <AdminCars />}
             {tab === 'texty' && isAdmin && <TextsAdmin />}
             {tab === 'hlidac' && isAdmin && <HlidacAdmin />}
+            {tab === 'novinky' && isAdmin && <NovinkyAdmin />}
             {tab === 'newsletter' && isAdmin && <NewsletterAdmin />}
           </Suspense>
         </main>
