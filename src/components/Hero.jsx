@@ -1,24 +1,9 @@
 import { useRef } from 'react';
 import { ShoppingCart, Sparkles, ArrowRight } from 'lucide-react';
-import { useCountUp } from '../hooks/useCountUp.js';
 import { useApp } from '../AppContext.jsx';
 import BrandMarquee from './BrandMarquee.jsx';
 import Hero3D from './hero3d/Hero3D.jsx';
 import { homeText } from '../data/landing.js';
-
-/** Jedna statistika s animovaným počítadlem */
-function Stat({ end, suffix = '', decimals = 0, label }) {
-  const [ref, value] = useCountUp(end, { decimals });
-  return (
-    <div>
-      <dt ref={ref} className="font-display text-3xl md:text-4xl font-bold text-white">
-        {value}
-        {suffix}
-      </dt>
-      <dd className="mt-1 text-sm text-zinc-500">{label}</dd>
-    </div>
-  );
-}
 
 export default function Hero() {
   const heroRef = useRef(null);
@@ -30,7 +15,6 @@ export default function Hero() {
   const cut = accent.lastIndexOf(' ') + 1;
   const accentHead = accent.slice(0, cut);
   const accentTail = accent.slice(cut);
-  const statNum = (k) => parseInt(String(t(k)).replace(/\D/g, ''), 10) || 0;
 
   // Spotlight, který sleduje kurzor
   const onMove = (e) => {
@@ -91,11 +75,6 @@ export default function Hero() {
               <ShoppingCart className="w-5 h-5" /> Prohlédnout bazar
             </a>
           </div>
-
-          <dl className="mx-auto mt-14 grid grid-cols-2 gap-6 max-w-sm">
-            <Stat end={statNum('home_stat_sold')} suffix="+" label="prodaných aut" />
-            <Stat end={statNum('home_stat_members')} suffix="+" label="členů komunity" />
-          </dl>
         </div>
       </div>
 
