@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { X, ChevronLeft, ChevronRight, Gauge, Calendar, Fuel, Zap, CarFront, ExternalLink, Loader2, AlertTriangle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Gauge, Calendar, Fuel, Zap, CarFront, ExternalLink, Loader2, AlertTriangle, Cog, Car } from 'lucide-react';
 import { useUndervaluedDetail } from '../../hooks/useDeals.js';
+import { BODY_LABELS, FUEL_LABELS, GEARBOX_LABELS, dealLabel } from '../../data/dealLabels.js';
 
 /* ============================================================
    Detail podhodnoceného vozu — obsahově stejný jako
@@ -78,10 +79,10 @@ function Histogram({ bins }) {
   );
 }
 
-export default function DealDetailModal({ externalId, reference = 'median', onClose }) {
+export default function DealDetailModal({ externalId, reference = 'median', minSampleSize, onClose }) {
   const [idx, setIdx] = useState(0);
   const open = Boolean(externalId);
-  const { data, isLoading, isError } = useUndervaluedDetail(externalId, { reference });
+  const { data, isLoading, isError } = useUndervaluedDetail(externalId, { reference, min_sample_size: minSampleSize });
   const photos = data?.images || [];
   const has = photos.length > 0;
   const cohort = data?.cohort || [];
@@ -216,9 +217,18 @@ export default function DealDetailModal({ externalId, reference = 'median', onCl
               <div className="mt-4 grid grid-cols-2 gap-2.5">
                 <Spec icon={Calendar} label="Rok výroby" value={data.year} />
                 <Spec icon={Gauge} label="Najeto" value={km(data.mileage_km)} />
-                <Spec icon={Fuel} label="Palivo" value={data.fuel_type} />
+                <Spec icon={Fuel} label="Palivo" value={dealLabel(FUEL_LABELS, data.fuel_type)} />
                 <Spec icon={Zap} label="Výkon" value={data.power_kw != null ? `${data.power_kw} kW` : null} />
+                <Spec icon={Cog} label="Převodovka" value={dealLabel(GEARBOX_LABELS, data.gearbox)} />
+                <Spec icon={Car} label="Karoserie" value={dealLabel(BODY_LABELS, data.body_type)} />
               </div>
+              {data.body_type && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  {data.body_matched
+                    ? 'Srovnáno jen s auty se stejnou karoserií.'
+                    : 'Aut se stejnou karoserií je málo — srovnáno se všemi karoseriemi tohoto modelu.'}
+                </p>
+              )}
 
               <div className="mt-5">
                 <h3 className="font-display font-bold text-white">Srovnávací vzorek sauto.cz (n = {cohort.length})</h3>

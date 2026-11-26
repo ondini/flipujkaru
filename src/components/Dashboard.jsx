@@ -16,6 +16,7 @@ import { LogoMark } from './Logo.jsx';
 import { telegramLink } from '../lib/telegram.js';
 import CourseRow from './dashboard/CourseRow.jsx';
 import CampaignSettings from './dashboard/CampaignSettings.jsx';
+import { BODY_LABELS, FUEL_LABELS, GEARBOX_LABELS, dealLabel } from '../data/dealLabels.js';
 
 // Panely → lazy, načtou se až po kliknutí na danou záložku
 const AdminCars = lazy(() => import('./AdminCars.jsx'));
@@ -296,6 +297,7 @@ function Overview({ user, planName, paidUntil, isAdmin, backToSite, setTab, open
 const DEFAULT_FLIP_FILTERS = {
   manufacturer: '', model: '', min_gap_pct: '', min_sample_size: 5,
   min_price: '', max_price: '', min_km: '', max_km: '', min_year: '', max_year: '',
+  min_kw: '', max_kw: '', fuel_type: '', gearbox: '', body_type: '',
   include_damaged: false, reference: 'median', sort: 'gap_czk', order: 'desc',
 };
 
@@ -325,6 +327,15 @@ function FlipField({ label, hint, children }) {
       {children}
       {hint && <span className="mt-1 block text-[11px] text-zinc-500">{hint}</span>}
     </label>
+  );
+}
+
+function FlipLabeledSelect({ value, onChange, labels, placeholder }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={flipInputClass}>
+      <option value="">{placeholder}</option>
+      {Object.entries(labels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+    </select>
   );
 }
 
@@ -459,6 +470,21 @@ function RecommendedFlips() {
           <FlipField label="Rok do">
             <input type="number" inputMode="numeric" min="0" value={filters.max_year} onChange={(e) => updateFilter('max_year', e.target.value)} className={flipInputClass} placeholder="bez omezení" />
           </FlipField>
+          <FlipField label="Výkon od (kW)">
+            <input type="number" inputMode="numeric" min="0" value={filters.min_kw} onChange={(e) => updateFilter('min_kw', e.target.value)} className={flipInputClass} placeholder="0" />
+          </FlipField>
+          <FlipField label="Výkon do (kW)">
+            <input type="number" inputMode="numeric" min="0" value={filters.max_kw} onChange={(e) => updateFilter('max_kw', e.target.value)} className={flipInputClass} placeholder="bez omezení" />
+          </FlipField>
+          <FlipField label="Palivo">
+            <FlipLabeledSelect value={filters.fuel_type} onChange={(v) => updateFilter('fuel_type', v)} labels={FUEL_LABELS} placeholder="Jakékoliv" />
+          </FlipField>
+          <FlipField label="Převodovka">
+            <FlipLabeledSelect value={filters.gearbox} onChange={(v) => updateFilter('gearbox', v)} labels={GEARBOX_LABELS} placeholder="Jakákoliv" />
+          </FlipField>
+          <FlipField label="Karoserie" hint="jen vozy se známou karoserií">
+            <FlipLabeledSelect value={filters.body_type} onChange={(v) => updateFilter('body_type', v)} labels={BODY_LABELS} placeholder="Jakákoliv" />
+          </FlipField>
           <FlipField label="Řazení">
             <select value={filters.sort} onChange={(e) => updateFilter('sort', e.target.value)} className={flipInputClass}>
               <option value="gap_czk">Rozdíl v Kč</option>
@@ -523,7 +549,7 @@ function RecommendedFlips() {
         {!isError && items.length > 0 && (
           <div className={`relative transition-opacity ${refetching ? 'pointer-events-none opacity-50' : ''}`}>
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[820px] border-collapse text-sm">
+              <table className="w-full min-w-[900px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-white/10 text-left text-xs uppercase tracking-wide text-zinc-500">
                     <th className="whitespace-nowrap px-3 py-2 font-medium">Vůz</th>
@@ -536,6 +562,7 @@ function RecommendedFlips() {
                       </th>
                     ))}
                     <th className="whitespace-nowrap px-3 py-2 font-medium">Palivo</th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">Karoserie</th>
                     <th className="whitespace-nowrap px-3 py-2 font-medium">Výkon</th>
                     <th className="whitespace-nowrap px-3 py-2 font-medium">Vzorek</th>
                     <th className="whitespace-nowrap px-3 py-2 font-medium" />
@@ -554,7 +581,11 @@ function RecommendedFlips() {
                       <td className="whitespace-nowrap px-3 py-2.5 text-xs font-semibold text-accent">
                         {item.gap_czk != null ? czk(item.gap_czk) : '—'}{item.gap_pct != null ? ` · −${Math.round(item.gap_pct * 100)} %` : ''}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">{item.fuel_type || '—'}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">
+                        {dealLabel(FUEL_LABELS, item.fuel_type) || '—'}
+                        {item.gearbox && <div className="text-xs text-zinc-500">{dealLabel(GEARBOX_LABELS, item.gearbox)}</div>}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-zinc-300">{dealLabel(BODY_LABELS, item.body_type) || '—'}</td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-400">{item.power_kw != null ? `${item.power_kw} kW` : '—'}</td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-400" title="Počet srovnatelných inzerátů na sauto.cz použitých pro výpočet referenční ceny">n = {item.sample_size ?? '—'}</td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-right">
@@ -599,7 +630,7 @@ function RecommendedFlips() {
 
       {selectedId && (
         <Suspense fallback={null}>
-          <DealDetailModal externalId={selectedId} reference={applied.reference} onClose={closeDetail} />
+          <DealDetailModal externalId={selectedId} reference={applied.reference} minSampleSize={applied.min_sample_size} onClose={closeDetail} />
         </Suspense>
       )}
     </div>
